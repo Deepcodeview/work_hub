@@ -31,15 +31,35 @@ export default function App() {
   // App data state
   const [refreshing, setRefreshing] = useState(false);
   const [clockedIn, setClockedIn] = useState(false);
-  const [clockInTime, setClockInTime] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  const [clockInTimestamp, setClockInTimestamp] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    let interval: any = null;
+    if (clockedIn && clockInTimestamp) {
+      interval = setInterval(() => {
+        setElapsedSeconds(Math.max(0, Math.floor((Date.now() - clockInTimestamp) / 1000)));
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [clockedIn, clockInTimestamp]);
+
+  const elapsedHours = Math.floor(elapsedSeconds / 3600);
+  const elapsedMinutes = Math.floor((elapsedSeconds % 3600) / 60);
+  const elapsedSecs = elapsedSeconds % 60;
+  const pad2 = (n: number) => n.toString().padStart(2, '0');
 
   const handleLogin = async () => {
     setLoading(true);
@@ -72,13 +92,15 @@ export default function App() {
 
   const handleClockToggle = () => {
     if (!clockedIn) {
+      const nowTs = Date.now();
       setClockedIn(true);
-      setClockInTime(currentTime);
-      Alert.alert('Clocked In', `You have successfully clocked in at ${currentTime}`);
+      setClockInTimestamp(nowTs);
+      Alert.alert('Clocked In', `Work timer started at ${currentTime}`);
     } else {
-      Alert.alert('Clocked Out', `You have clocked out for the day at ${currentTime}`);
+      const recorded = `${elapsedHours}h ${elapsedMinutes}m ${elapsedSecs}s`;
+      Alert.alert('Clocked Out', `Shift closed! Total logged work time: ${recorded}`);
       setClockedIn(false);
-      setClockInTime(null);
+      setClockInTimestamp(null);
     }
   };
 
@@ -203,7 +225,7 @@ export default function App() {
         contentContainerStyle={styles.contentContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF7A00']} />}
       >
-        {/* Attendance Card */}
+        {/* Attendance Card with Live Timer */}
         <View style={styles.attendanceCard}>
           <View style={styles.attendanceHeader}>
             <View>
@@ -217,6 +239,29 @@ export default function App() {
             </View>
           </View>
 
+          {/* Live Work Timer Block */}
+          <View style={styles.mobileTimerBox}>
+            <Text style={styles.mobileTimerLabel}>
+              {clockedIn ? 'LIVE WORK TIME ELAPSED' : 'SHIFT TIMER (READY)'}
+            </Text>
+            <View style={styles.mobileTimerDigits}>
+              <View style={styles.digitPill}>
+                <Text style={styles.digitVal}>{pad2(elapsedHours)}</Text>
+                <Text style={styles.digitSub}>HRS</Text>
+              </View>
+              <Text style={styles.digitColon}>:</Text>
+              <View style={styles.digitPill}>
+                <Text style={styles.digitVal}>{pad2(elapsedMinutes)}</Text>
+                <Text style={styles.digitSub}>MIN</Text>
+              </View>
+              <Text style={styles.digitColon}>:</Text>
+              <View style={[styles.digitPill, styles.digitPillSec]}>
+                <Text style={[styles.digitVal, styles.digitValSec]}>{pad2(elapsedSecs)}</Text>
+                <Text style={[styles.digitSub, styles.digitSubSec]}>SEC</Text>
+              </View>
+            </View>
+          </View>
+
           <TouchableOpacity
             style={[styles.clockActionButton, clockedIn ? styles.clockActionOut : styles.clockActionIn]}
             onPress={handleClockToggle}
@@ -227,10 +272,12 @@ export default function App() {
             </Text>
           </TouchableOpacity>
 
-          {clockInTime ? (
-            <Text style={styles.clockMetaText}>Logged since {clockInTime} today</Text>
+          {clockInTimestamp ? (
+            <Text style={styles.clockMetaText}>
+              Session started at {new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • 8h Goal
+            </Text>
           ) : (
-            <Text style={styles.clockMetaText}>Shift window: 09:00 AM - 06:00 PM</Text>
+            <Text style={styles.clockMetaText}>Shift window: 09:00 AM - 06:00 PM (8h Target)</Text>
           )}
         </View>
 
@@ -599,6 +646,65 @@ const styles = StyleSheet.create({
   },
   statusTextInactive: {
     color: '#64748B',
+  },
+  mobileTimerBox: {
+    backgroundColor: '#FFFDF9',
+    borderWidth: 1,
+    borderColor: '#FDE6D2',
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  mobileTimerLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#8A92A6',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  mobileTimerDigits: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  digitPill: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EBE4D8',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    minWidth: 50,
+  },
+  digitPillSec: {
+    backgroundColor: '#FFF2E2',
+    borderColor: '#FFD2A6',
+  },
+  digitVal: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1F2937',
+    fontVariant: ['tabular-nums'],
+  },
+  digitValSec: {
+    color: '#FF7A00',
+  },
+  digitSub: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#8A92A6',
+    marginTop: 2,
+  },
+  digitSubSec: {
+    color: '#FF7A00',
+  },
+  digitColon: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FF7A00',
+    marginHorizontal: 2,
   },
   clockActionButton: {
     paddingVertical: 14,
