@@ -3,16 +3,62 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, LayoutGrid, ChevronDown, Menu, CheckCircle2 } from './icons';
+import {
+  Search,
+  Bell,
+  LayoutGrid,
+  ChevronDown,
+  Menu,
+  CheckCircle2,
+  Clock,
+  Home,
+  FileText,
+  FolderKanban,
+  CheckSquare,
+  Users,
+  BarChart3,
+  Building2,
+  Settings,
+  Calendar,
+  X,
+  Sparkles,
+} from './icons';
 import { useNavigation } from './navigation-context';
 import { api, getStoredUser, clearStoredSession } from '../lib/api';
 
 export function Header() {
   const { toggleSidebar } = useNavigation();
   const router = useRouter();
+
+  // Dropdown states
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [appsOpen, setAppsOpen] = useState(false);
+
+  // User state
   const [user, setUser] = useState<any>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState([
+    {
+      id: 'notif-1',
+      title: 'Workspace Active',
+      message: 'Welcome to WorkHub. PostgreSQL and backend services are operational.',
+      time: 'Just now',
+      unread: true,
+      type: 'system',
+    },
+    {
+      id: 'notif-2',
+      title: 'Attendance Reminder',
+      message: 'Remember to track your daily shifts with the live digital clock.',
+      time: 'Today',
+      unread: true,
+      type: 'attendance',
+    },
+  ]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = getStoredUser();
@@ -21,11 +67,13 @@ export function Header() {
     }
   }, []);
 
-  // Close profile menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
+        setNotificationsOpen(false);
+        setAppsOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -38,14 +86,40 @@ export function Header() {
     router.push('/login');
   };
 
+  const markAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
   const displayName = user?.employee
     ? `${user.employee.firstName} ${user.employee.lastName}`
     : 'System Admin';
   const displayRole = user?.roles?.[0] ? user.roles[0].replace('_', ' ') : 'Administrator';
   const displayEmail = user?.email || 'admin@workhub.internal';
 
+  // Quick Launcher Applications
+  const apps = [
+    { name: 'Home', href: '/', icon: Home, color: 'bg-orange-50 text-orange-600 border-orange-100' },
+    { name: 'Attendance', href: '/attendance', icon: Clock, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+    { name: 'Timesheets', href: '/timesheets', icon: FileText, color: 'bg-purple-50 text-purple-600 border-purple-100' },
+    { name: 'Projects', href: '/projects', icon: FolderKanban, color: 'bg-blue-50 text-blue-600 border-blue-100' },
+    { name: 'Tasks', href: '/tasks', icon: CheckSquare, color: 'bg-amber-50 text-amber-600 border-amber-100' },
+    { name: 'Team', href: '/team', icon: Users, color: 'bg-rose-50 text-rose-600 border-rose-100' },
+    { name: 'Reports', href: '/departments', icon: BarChart3, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+    { name: 'Organization', href: '/organization', icon: Building2, color: 'bg-cyan-50 text-cyan-600 border-cyan-100' },
+    { name: 'Automations', href: '/automations', icon: Settings, color: 'bg-teal-50 text-teal-600 border-teal-100' },
+    { name: 'Calendar', href: '/calendar', icon: Calendar, color: 'bg-violet-50 text-violet-600 border-violet-100' },
+    { name: 'Documents', href: '/documents', icon: FileText, color: 'bg-sky-50 text-sky-600 border-sky-100' },
+    { name: 'Chat', href: '/chat', icon: Sparkles, color: 'bg-pink-50 text-pink-600 border-pink-100' },
+  ];
+
   return (
-    <header className="h-16 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#F1ECE4] fixed top-0 right-0 left-0 lg:left-64 z-30 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 transition-all duration-300">
+    <header className="h-16 bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#F1ECE4] fixed top-0 right-0 left-0 lg:left-64 z-30 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-3 transition-all duration-300">
       {/* Left Group: Hamburger on Mobile + Search Bar */}
       <div className="flex items-center gap-3 flex-1 max-w-lg">
         {/* Mobile Hamburger Toggle Button */}
@@ -75,27 +149,53 @@ export function Header() {
       </div>
 
       {/* Right User Actions */}
-      <div className="flex items-center gap-2 sm:gap-4 shrink-0 relative" ref={menuRef}>
-        {/* Notification Bell */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0 relative" ref={containerRef}>
+        {/* 1. Notification Bell Button */}
         <button
-          className="relative p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] transition-colors"
+          onClick={() => {
+            setNotificationsOpen(!notificationsOpen);
+            setAppsOpen(false);
+            setProfileOpen(false);
+          }}
+          className={`relative p-2 rounded-xl transition-colors ${
+            notificationsOpen
+              ? 'bg-[#FFF0E0] text-[#FF7A00]'
+              : 'text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0]'
+          }`}
           title="Notifications"
+          aria-label="Open notifications"
         >
           <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#FF8A00] ring-2 ring-white"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#FF7A00] ring-2 ring-white animate-pulse" />
+          )}
         </button>
 
-        {/* Apps Grid */}
+        {/* 2. Apps Launcher / Grid Button */}
         <button
-          className="p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] transition-colors hidden sm:flex"
-          title="App Launcher"
+          onClick={() => {
+            setAppsOpen(!appsOpen);
+            setNotificationsOpen(false);
+            setProfileOpen(false);
+          }}
+          className={`p-2 rounded-xl transition-colors ${
+            appsOpen
+              ? 'bg-[#FFF0E0] text-[#FF7A00]'
+              : 'text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0]'
+          }`}
+          title="WorkHub App Launcher"
+          aria-label="Open application launcher"
         >
           <LayoutGrid className="w-5 h-5" />
         </button>
 
-        {/* User Profile Pill */}
+        {/* 3. User Profile Pill */}
         <div
-          onClick={() => setProfileOpen(!profileOpen)}
+          onClick={() => {
+            setProfileOpen(!profileOpen);
+            setNotificationsOpen(false);
+            setAppsOpen(false);
+          }}
           className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2 pr-2 sm:pr-3 py-1 sm:py-1.5 rounded-full hover:bg-[#F8F5F0] transition-colors cursor-pointer border border-transparent hover:border-[#EBE4D8]"
         >
           <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-full bg-gradient-to-tr from-[#FF981A] to-[#FFB766] flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-sm shrink-0">
@@ -112,9 +212,136 @@ export function Header() {
           <ChevronDown className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#8A94A6] hidden sm:block" />
         </div>
 
-        {/* Profile Dropdown Popover */}
+        {/* -------------------- NOTIFICATIONS DROPDOWN -------------------- */}
+        {notificationsOpen && (
+          <div className="absolute top-14 right-8 sm:right-16 w-80 sm:w-96 bg-white rounded-3xl border border-[#F1ECE4] shadow-2xl p-4 z-50 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F1ECE4] mb-3">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-[#FF7A00]" />
+                <h3 className="font-bold text-sm text-[#1F2937]">Notifications</h3>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-[#FFF0E0] text-[#FF7A00] font-bold text-[10px]">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllNotificationsRead}
+                    className="text-[11px] font-semibold text-[#FF7A00] hover:text-[#E66E00]"
+                  >
+                    Mark read
+                  </button>
+                )}
+                <button
+                  onClick={() => setNotificationsOpen(false)}
+                  className="p-1 rounded-full text-[#9CA3AF] hover:text-[#1F2937]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {notifications.length === 0 ? (
+              <div className="text-center py-8 text-[#8A92A6]">
+                <CheckCircle2 className="w-10 h-10 text-[#10B981] mx-auto mb-2 opacity-80" />
+                <p className="font-semibold text-xs text-[#1F2937]">All caught up!</p>
+                <p className="text-[11px]">No unread alerts or notifications.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto no-scrollbar">
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`p-3 rounded-2xl border transition-colors ${
+                      n.unread
+                        ? 'bg-[#FFFBF5] border-[#FED7AA]'
+                        : 'bg-white border-[#F3EFEA] hover:bg-[#FAF7F2]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="font-bold text-xs text-[#1F2937] block">
+                        {n.title}
+                      </span>
+                      <span className="text-[10px] text-[#9CA3AF] shrink-0">{n.time}</span>
+                    </div>
+                    <p className="text-xs text-[#64748B] leading-relaxed">{n.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {notifications.length > 0 && (
+              <div className="pt-2 mt-2 border-t border-[#F1ECE4] flex justify-between items-center text-xs">
+                <button
+                  onClick={clearAllNotifications}
+                  className="text-[11px] font-medium text-[#9CA3AF] hover:text-[#DC2626]"
+                >
+                  Clear all
+                </button>
+                <Link
+                  href="/attendance"
+                  onClick={() => setNotificationsOpen(false)}
+                  className="text-[11px] font-semibold text-[#FF7A00] hover:underline"
+                >
+                  View Activity Logs →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* -------------------- APPS LAUNCHER DROPDOWN -------------------- */}
+        {appsOpen && (
+          <div className="absolute top-14 right-4 sm:right-12 w-80 sm:w-96 bg-white rounded-3xl border border-[#F1ECE4] shadow-2xl p-5 z-50 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F1ECE4] mb-4">
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4 text-[#FF7A00]" />
+                <h3 className="font-bold text-sm text-[#1F2937]">WorkHub Apps & Services</h3>
+              </div>
+              <button
+                onClick={() => setAppsOpen(false)}
+                className="p-1 rounded-full text-[#9CA3AF] hover:text-[#1F2937]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5 max-h-96 overflow-y-auto no-scrollbar">
+              {apps.map((app) => {
+                const IconComponent = app.icon;
+                return (
+                  <Link
+                    key={app.name}
+                    href={app.href}
+                    onClick={() => setAppsOpen(false)}
+                    className="flex flex-col items-center text-center p-3 rounded-2xl hover:bg-[#FAF7F2] transition-all group"
+                  >
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-xs transition-transform group-hover:scale-105 group-active:scale-95 mb-2 ${app.color}`}
+                    >
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <span className="font-bold text-xs text-[#1F2937] leading-tight block">
+                      {app.name}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="pt-3 mt-3 border-t border-[#F1ECE4] text-center">
+              <span className="text-[11px] text-[#8A92A6]">
+                Single Sign-On Connected • WorkHub Suite
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* -------------------- USER PROFILE DROPDOWN -------------------- */}
         {profileOpen && (
-          <div className="absolute top-14 right-0 w-64 bg-white rounded-3xl border border-[#F1ECE4] shadow-xl p-4 z-50 animate-in fade-in duration-150">
+          <div className="absolute top-14 right-0 w-64 bg-white rounded-3xl border border-[#F1ECE4] shadow-2xl p-4 z-50 animate-in fade-in duration-150">
             <div className="flex items-center gap-3 pb-3 border-b border-[#F1ECE4] mb-3">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#FF981A] to-[#FFB766] flex items-center justify-center text-white font-bold text-sm shadow-xs shrink-0">
                 {displayName[0]}
