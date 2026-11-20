@@ -32,12 +32,22 @@ export function setStoredSession(session: UserSession): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('workhub_token', session.token);
   localStorage.setItem('workhub_user', JSON.stringify(session.user));
+  try {
+    document.cookie = `workhub_token=${encodeURIComponent(session.token)}; path=/; max-age=604800; SameSite=Lax`;
+  } catch {
+    // ignore in environments without document
+  }
 }
 
 export function clearStoredSession(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('workhub_token');
   localStorage.removeItem('workhub_user');
+  try {
+    document.cookie = 'workhub_token=; path=/; max-age=0; SameSite=Lax';
+  } catch {
+    // ignore
+  }
 }
 
 export function getStoredUser(): any | null {
@@ -52,37 +62,12 @@ export function getStoredUser(): any | null {
 }
 
 /**
- * Ensures a valid session exists. If not logged in, auto-authenticates
- * with the seeded admin account to ensure all features work out-of-the-box.
+ * Ensures a valid session exists. Returns the existing token if authenticated,
+ * or empty string if not. Does not auto-authenticate, preserving strict auth guards.
  */
 export async function ensureSession(): Promise<string> {
   const existing = getStoredToken();
   if (existing) return existing;
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'admin@workhub.internal',
-        password: 'Password123!',
-      }),
-    });
-
-    if (res.ok) {
-      const json = await res.json();
-      const token = json.data?.accessToken;
-      if (token) {
-        setStoredSession({
-          token,
-          user: json.data.user,
-        });
-        return token;
-      }
-    }
-  } catch {
-    // If backend is unreachable or offline, return empty string
-  }
   return '';
 }
 
