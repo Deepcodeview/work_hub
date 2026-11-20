@@ -43,8 +43,6 @@ export default function TasksPage() {
   const [newPriority, setNewPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState('120');
 
-  const defaultMockTasks: TaskItem[] = [];
-
   const fetchTasksData = async () => {
     try {
       setLoading(true);

@@ -361,11 +361,11 @@ export default function AttendancePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3 w-full">
+              <div className="flex flex-wrap items-center gap-3 w-full">
                 <button
                   disabled={loading}
                   onClick={clockedIn ? handleClockOut : handleClockIn}
-                  className={`flex-1 px-6 sm:px-8 py-3 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-50 ${
+                  className={`flex-1 min-w-[160px] px-6 sm:px-8 py-3 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-50 ${
                     clockedIn
                       ? 'bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white shadow-red-500/25 hover:from-[#DC2626] hover:to-[#B91C1C]'
                       : 'bg-gradient-to-r from-[#FF981A] to-[#FF7A00] text-white shadow-orange-500/25 hover:from-[#E68715] hover:to-[#E66E00]'
@@ -390,7 +390,7 @@ export default function AttendancePage() {
                   <button
                     disabled={loading}
                     onClick={handleToggleBreak}
-                    className={`px-4 sm:px-5 py-3 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition-all ${
+                    className={`px-4 sm:px-5 py-3 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition-all shrink-0 ${
                       onBreak
                         ? 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]'
                         : 'bg-white text-[#64748B] border-[#E2DDD5] hover:bg-[#F9F7F4]'
@@ -404,7 +404,7 @@ export default function AttendancePage() {
             </div>
 
             {/* Right: Geofence Vector Map Graphic */}
-            <div className="xl:col-span-5 w-full h-56 rounded-2xl sm:rounded-3xl bg-[#FFF8F0] border border-[#FDE5CF] p-4 flex flex-col justify-between relative overflow-hidden shadow-xs">
+            <div className="xl:col-span-5 w-full min-h-[220px] min-w-0 max-w-full rounded-2xl sm:rounded-3xl bg-[#FFF8F0] border border-[#FDE5CF] p-4 flex flex-col justify-between relative overflow-hidden shadow-xs">
               {/* Vector Map Background: streets, highways, and blocks */}
               <svg
                 className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
