@@ -40,10 +40,13 @@ jobs:
             echo "📦 Installing dependencies..."
             pnpm install --frozen-lockfile=false
 
-            # Run database migrations and generate Prisma client
-            echo "🗄️ Running database migrations..."
-            pnpm --filter @workhub/database db:generate
-            pnpm --filter @workhub/database db:deploy
+            # Sync environment files
+            cp -f .env packages/database/.env 2>/dev/null || true
+            cp -f .env apps/api/.env 2>/dev/null || true
+
+            # Generate Prisma client and sync database
+            echo "🗄️ Running database sync..."
+            cd packages/database && npx prisma generate && npx prisma db push && cd /home/ubuntu/work_hub
 
             # Build production Next.js and NestJS packages
             echo "🔨 Building application for production..."
