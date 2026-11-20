@@ -24,6 +24,10 @@ jobs:
           script: |
             echo "🚀 Deployment started on $(hostname) at $(date)"
             
+            # Ensure full PATH access for node, pnpm, and pm2 in non-interactive SSH
+            export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$PATH"
+            export NODE_ENV=production
+            
             # Navigate to project directory
             cd /home/ubuntu/work_hub || exit 1
 
