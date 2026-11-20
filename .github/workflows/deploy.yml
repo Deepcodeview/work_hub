@@ -18,7 +18,7 @@ jobs:
         with:
           host: 16.179.236.212
           username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY || secrets.PRIVATE_KEY || secrets.LIGHTSAIL_KEY || secrets.LIGHTSAIL_SSH_KEY || secrets.AWS_SSH_KEY }}
           port: 22
           script_stop: true
           script: |
