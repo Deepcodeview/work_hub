@@ -19,14 +19,18 @@ import {
   ChevronRight,
   TrendingUp,
   AlertCircle,
+  Users,
+  Plus,
 } from '../components/icons';
-import { api } from '../lib/api';
+import { api, getStoredUser } from '../lib/api';
 
 export default function HomePage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTimestamp, setClockInTimestamp] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [currentTime, setCurrentTime] = useState('09:28 AM');
+  const [currentTime, setCurrentTime] = useState('');
+  const [currentDateStr, setCurrentDateStr] = useState('');
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -38,25 +42,36 @@ export default function HomePage() {
     timesheetStatus: '0h 00m',
   });
 
+  // Real backend entities
+  const [projects, setProjects] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
   // AI Copilot state
   const [prompt, setPrompt] = useState('');
   const [copilotReply, setCopilotReply] = useState<string | null>(null);
   const [copilotLoading, setCopilotLoading] = useState(false);
 
-  // Interactive Checklist
-  const [todos, setTodos] = useState<{ id: number; title: string; done: boolean }[]>([]);
-
-  // Keep digital clock live
+  // Keep digital clock live & current date dynamic
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(
         now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       );
+      setCurrentDateStr(
+        now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+      );
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Initialize user profile
+  useEffect(() => {
+    const user = getStoredUser();
+    if (user) setCurrentUser(user);
   }, []);
 
   // Initialize active session from local storage or server
@@ -124,9 +139,38 @@ export default function HomePage() {
       if (dashRes.success && dashRes.data) {
         setStats((prev) => ({
           ...prev,
-          activeProjects: dashRes.data.projects?.totalActive || prev.activeProjects,
-          openTasks: dashRes.data.tasks?.totalOpen || prev.openTasks,
+          activeProjects: dashRes.data.projects?.totalActive ?? prev.activeProjects,
+          openTasks: dashRes.data.tasks?.totalOpen ?? prev.openTasks,
         }));
+      }
+
+      // 3. Projects
+      const projRes = await api.projects.list();
+      if (projRes.success && Array.isArray(projRes.data)) {
+        setProjects(projRes.data);
+        setStats((prev) => ({ ...prev, activeProjects: projRes.data.length }));
+
+        // 4. Tasks from projects
+        if (projRes.data.length > 0) {
+          let allTasks: any[] = [];
+          for (const p of projRes.data) {
+            const tRes = await api.tasks.listByProject(p.id);
+            if (tRes.success && Array.isArray(tRes.data)) {
+              allTasks = [...allTasks, ...tRes.data];
+            }
+          }
+          setTasks(allTasks);
+          setStats((prev) => ({
+            ...prev,
+            openTasks: allTasks.filter((t) => t.status !== 'COMPLETED' && t.status !== 'DONE').length,
+          }));
+        }
+      }
+
+      // 5. Team members
+      const teamRes = await api.organization.getEmployees();
+      if (teamRes.success && Array.isArray(teamRes.data)) {
+        setTeamMembers(teamRes.data);
       }
     }
     loadData();
@@ -137,7 +181,7 @@ export default function HomePage() {
     if (!clockedIn) {
       // Clock In
       const nowTs = Date.now();
-      const res = await api.attendance.clockIn({
+      await api.attendance.clockIn({
         latitude: 40.7128,
         longitude: -74.006,
       });
@@ -149,7 +193,7 @@ export default function HomePage() {
       setNotification('Clocked in successfully. Work session live counter started!');
     } else {
       // Clock Out
-      const res = await api.attendance.clockOut({
+      await api.attendance.clockOut({
         latitude: 40.7128,
         longitude: -74.006,
       });
@@ -173,14 +217,13 @@ export default function HomePage() {
     setCopilotReply(null);
 
     try {
-      // Send proposal to automations engine
       const res = await api.automations.proposeAiAction({
         actionType: 'CREATE_TASK',
         proposedPayload: {
           title: prompt,
           description: `Generated via Work Assistant: "${prompt}"`,
           priority: 'MEDIUM',
-          projectId: 'hrms-platform',
+          projectId: projects[0]?.id || 'workspace',
         },
       });
 
@@ -204,16 +247,22 @@ export default function HomePage() {
     }
   };
 
-  const toggleTodo = (id: number) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+  const toggleTaskStatus = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'COMPLETED' || currentStatus === 'DONE' ? 'TODO' : 'COMPLETED';
+    await api.tasks.update(taskId, { status: newStatus as any });
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
     );
   };
 
-  const completedCount = todos.filter((t) => t.done).length;
+  const displayName = currentUser?.employee
+    ? `${currentUser.employee.firstName} ${currentUser.employee.lastName}`
+    : 'Admin';
+
+  const completedCount = tasks.filter((t) => t.status === 'COMPLETED' || t.status === 'DONE').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       {/* Notification Toast */}
       {notification && (
         <div className="p-3 bg-[#EBFBF3] border border-[#DCFCE7] text-[#10B981] text-xs font-semibold rounded-2xl flex items-center justify-between shadow-xs transition-all animate-in fade-in">
@@ -225,23 +274,23 @@ export default function HomePage() {
       {/* 1. Greeting Title Banner */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">
-            Good Morning, John 👋
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1F2937] tracking-tight">
+            Welcome back, {displayName} 👋
           </h1>
           <p className="text-xs sm:text-sm text-[#8A92A6] mt-0.5">
-            Tue, Jan 28, 2025 • <span className="text-[#64748B]">Focus on your goals today.</span>
+            {currentDateStr || 'Today'} • <span className="text-[#64748B]">Focus on your goals today.</span>
           </p>
         </div>
       </div>
 
-      {/* 2. Top Hero Section: Punch Clock + 3D Glass Office Visual & Today's Plan */}
+      {/* 2. Top Hero Section: Punch Clock + Today's Plan */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Punch Clock & Glasshouse Card (Cols 1-8) */}
-        <div className="lg:col-span-8 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-          {/* Left: Punch In/Out Arc & Dial */}
-          <div className="flex flex-col items-center md:items-start space-y-4 shrink-0 w-full md:w-auto">
+        {/* Punch Clock Card (Cols 1-8) */}
+        <div className="lg:col-span-8 bg-white rounded-3xl border border-[#F1ECE4] p-4 sm:p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          {/* Left: Punch In/Out Controls & Dial */}
+          <div className="flex flex-col items-center md:items-start space-y-4 shrink-0 w-full">
             {/* Status indicator */}
-            <div className="flex items-center justify-between w-full md:w-auto gap-3">
+            <div className="flex items-center justify-between w-full gap-3">
               <div
                 className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${
                   clockedIn
@@ -265,48 +314,48 @@ export default function HomePage() {
             </div>
 
             {/* Live Work Stopwatch Card */}
-            <div className="w-full flex flex-col items-center md:items-start p-4 rounded-2xl bg-gradient-to-b from-[#FFFDF9] to-[#FFF7EE] border border-[#FDE6D2]/80 shadow-inner">
+            <div className="w-full flex flex-col items-center md:items-start p-3 sm:p-4 rounded-2xl bg-gradient-to-b from-[#FFFDF9] to-[#FFF7EE] border border-[#FDE6D2]/80 shadow-inner">
               <div className="flex items-center justify-between w-full mb-2">
-                <span className="text-[11px] font-bold text-[#8A92A6] uppercase tracking-wider">
+                <span className="text-[10px] sm:text-[11px] font-bold text-[#8A92A6] uppercase tracking-wider">
                   {clockedIn ? 'Live Work Time Elapsed' : 'Shift Timer (Ready)'}
                 </span>
-                <span className="text-[11px] font-bold text-[#FF7A00]">
+                <span className="text-[10px] sm:text-[11px] font-bold text-[#FF7A00]">
                   Target: 8h 00m
                 </span>
               </div>
 
               {/* Digital Timer Blocks (Hours : Minutes : Seconds) */}
-              <div className="flex items-center gap-2 font-mono my-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 font-mono my-1 w-full justify-center">
                 {/* Hours Block */}
-                <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
+                <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-xl sm:rounded-2xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 min-w-[50px] sm:min-w-[62px] shadow-xs">
+                  <span className="text-xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
                     {pad2(elapsedHours)}
                   </span>
-                  <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
+                  <span className="text-[8px] sm:text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
                     Hours
                   </span>
                 </div>
 
-                <span className="text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
+                <span className="text-xl sm:text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
 
                 {/* Minutes Block */}
-                <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
+                <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-xl sm:rounded-2xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 min-w-[50px] sm:min-w-[62px] shadow-xs">
+                  <span className="text-xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
                     {pad2(elapsedMinutes)}
                   </span>
-                  <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
+                  <span className="text-[8px] sm:text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
                     Minutes
                   </span>
                 </div>
 
-                <span className="text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
+                <span className="text-xl sm:text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
 
                 {/* Seconds Block */}
-                <div className="flex flex-col items-center bg-[#FFF2E2] border border-[#FFD2A6] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-[#FF7A00] leading-none">
+                <div className="flex flex-col items-center bg-[#FFF2E2] border border-[#FFD2A6] rounded-xl sm:rounded-2xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 min-w-[50px] sm:min-w-[62px] shadow-xs">
+                  <span className="text-xl sm:text-3xl font-extrabold text-[#FF7A00] leading-none">
                     {pad2(elapsedSecs)}
                   </span>
-                  <span className="text-[9px] font-bold text-[#FF7A00] uppercase tracking-wider mt-1">
+                  <span className="text-[8px] sm:text-[9px] font-bold text-[#FF7A00] uppercase tracking-wider mt-1">
                     Seconds
                   </span>
                 </div>
@@ -314,7 +363,7 @@ export default function HomePage() {
 
               {/* Shift Progress Bar */}
               <div className="w-full mt-3">
-                <div className="flex justify-between text-[11px] text-[#8A92A6] font-medium mb-1">
+                <div className="flex justify-between text-[10px] sm:text-[11px] text-[#8A92A6] font-medium mb-1">
                   <span>Shift Goal (480m)</span>
                   <span className="font-bold text-[#FF7A00]">{shiftProgressPercent}%</span>
                 </div>
@@ -332,7 +381,7 @@ export default function HomePage() {
               <button
                 disabled={loading}
                 onClick={handleToggleClock}
-                className={`flex-1 px-8 py-3 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all transform active:scale-98 disabled:opacity-50 ${
+                className={`flex-1 px-6 sm:px-8 py-3 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all transform active:scale-98 disabled:opacity-50 ${
                   clockedIn
                     ? 'bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white shadow-red-500/25 hover:from-[#DC2626] hover:to-[#B91C1C]'
                     : 'bg-gradient-to-r from-[#FF981A] to-[#FF7A00] text-white shadow-orange-500/25 hover:from-[#E68715] hover:to-[#E66E00]'
@@ -357,94 +406,72 @@ export default function HomePage() {
             {/* Location geofence badge */}
             <div className="flex items-center gap-2 text-xs text-[#8A92A6]">
               <MapPin className="w-3.5 h-3.5 text-[#FF7A00]" />
-              <span>Office HQ, Executive Floor</span>
+              <span>Office HQ</span>
               <span className="px-2 py-0.5 rounded-full bg-[#EBFBF3] text-[#10B981] font-semibold text-[11px]">
-                GPS Verified
+                Active
               </span>
-            </div>
-          </div>
-
-          {/* Right: Modern 3D Glass Office Architectural Pavilion Illustration */}
-          <div className="w-full md:w-80 h-64 relative flex items-center justify-center">
-            <div className="w-full h-full rounded-2xl bg-gradient-to-tr from-[#FFF7EE] via-[#FFF1E3] to-[#FFEAD4] border border-[#FDE3C7]/80 p-4 relative overflow-hidden flex flex-col justify-between shadow-inner">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-xs border border-white text-[11px] font-semibold text-[#FF7A00] shadow-2xs">
-                  <span className="w-2 h-2 rounded-full bg-[#FF7A00]"></span>
-                  HQ Office Pod
-                </div>
-                <div className="w-6 h-6 rounded-md bg-[#FF8A00] flex items-center justify-center text-white text-[11px] font-bold shadow-xs">
-                  W
-                </div>
-              </div>
-
-              <div className="relative my-auto flex items-center justify-center">
-                <div className="w-56 h-36 rounded-xl bg-white/70 backdrop-blur-md border border-white/90 shadow-md p-3 flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-bl from-white/80 to-transparent transform rotate-45 pointer-events-none"></div>
-
-                  <div className="flex items-center justify-between text-xs text-[#8A92A6]">
-                    <span className="font-semibold text-[#1F2937]">WorkStation #4</span>
-                    <span className="w-2 h-2 rounded-full bg-[#22C55E]"></span>
-                  </div>
-
-                  <div className="flex items-end justify-between px-2 pt-2">
-                    <div className="w-16 h-10 rounded-md bg-[#E2E8F0] border border-[#CBD5E1] p-1 flex items-center justify-center shadow-xs">
-                      <div className="w-12 h-6 bg-[#3B82F6]/20 rounded-xs"></div>
-                    </div>
-                    <div className="w-6 h-8 rounded-full bg-[#10B981]/20 flex items-center justify-center text-[10px]">
-                      🪴
-                    </div>
-                  </div>
-
-                  <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full"></div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-[#A16207] font-medium">
-                <span>Green Campus • Floor 3</span>
-                <span>Air Quality: 98 (Optimal)</span>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Card 2: Today's Plan (Cols 9-12) */}
+        {/* Today's Plan (Cols 9-12) */}
         <div className="lg:col-span-4 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-base text-[#1F2937]">Today's Plan</h2>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#16A34A] border border-[#DCFCE7]">
-                {completedCount} of {todos.length} completed
-              </span>
+              {tasks.length > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F0FDF4] text-[#16A34A] border border-[#DCFCE7]">
+                  {completedCount} of {tasks.length} completed
+                </span>
+              )}
             </div>
 
-            <div className="space-y-3">
-              {todos.map((todo) => (
-                <div
-                  key={todo.id}
-                  onClick={() => toggleTodo(todo.id)}
-                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#FAF7F2] transition-colors cursor-pointer group"
+            {tasks.length === 0 ? (
+              <div className="text-center py-8 text-[#8A92A6] text-xs">
+                <CheckSquare className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
+                <p className="font-semibold text-[#64748B] mb-1">No tasks scheduled for today</p>
+                <p className="text-[11px] mb-3">Create your first task to start organizing your workday.</p>
+                <Link
+                  href="/tasks"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF7A00] text-white font-semibold text-xs shadow-xs"
                 >
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                      todo.done
-                        ? 'bg-[#10B981] text-white shadow-xs'
-                        : 'border-2 border-[#CBD5E1] group-hover:border-[#94A3B8]'
-                    }`}
-                  >
-                    {todo.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </div>
-                  <span
-                    className={`text-sm select-none transition-all ${
-                      todo.done
-                        ? 'line-through text-[#94A3B8]'
-                        : 'text-[#334155] font-medium group-hover:text-[#1F2937]'
-                    }`}
-                  >
-                    {todo.title}
-                  </span>
-                </div>
-              ))}
-            </div>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Create Task</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tasks.slice(0, 4).map((task) => {
+                  const isDone = task.status === 'COMPLETED' || task.status === 'DONE';
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={() => toggleTaskStatus(task.id, task.status)}
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#FAF7F2] transition-colors cursor-pointer group"
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                          isDone
+                            ? 'bg-[#10B981] text-white shadow-xs'
+                            : 'border-2 border-[#CBD5E1] group-hover:border-[#94A3B8]'
+                        }`}
+                      >
+                        {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      </div>
+                      <span
+                        className={`text-sm select-none transition-all ${
+                          isDone
+                            ? 'line-through text-[#94A3B8]'
+                            : 'text-[#334155] font-medium group-hover:text-[#1F2937]'
+                        }`}
+                      >
+                        {task.title}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="pt-4 border-t border-[#F1ECE4] mt-4">
@@ -460,7 +487,7 @@ export default function HomePage() {
       </div>
 
       {/* 3. Four KPI Stats Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <div className="bg-white rounded-2xl border border-[#F1ECE4] p-5 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs font-medium text-[#8A92A6] block mb-1">This Week</span>
@@ -468,8 +495,8 @@ export default function HomePage() {
               {stats.hoursThisWeek}
             </span>
             <div className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-[#EBFBF3] text-[#10B981] text-xs font-semibold">
-              <TrendingUp className="w-3 h-3" />
-              <span>+ 8% vs last week</span>
+              <Clock className="w-3 h-3" />
+              <span>Standard Shift</span>
             </div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-[#FFF2E5] text-[#FF7A00] flex items-center justify-center shrink-0">
@@ -484,7 +511,7 @@ export default function HomePage() {
               {stats.activeProjects} Active
             </span>
             <div className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-[#FFF3E8] text-[#FF8A00] text-xs font-semibold">
-              <span>1 Due Soon</span>
+              <span>{projects.length} Total</span>
             </div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-[#FFF2E5] text-[#FF7A00] flex items-center justify-center shrink-0">
@@ -498,9 +525,8 @@ export default function HomePage() {
             <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">
               {stats.openTasks} Open
             </span>
-            <div className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-[#FEF2F2] text-[#EF4444] text-xs font-semibold">
-              <AlertCircle className="w-3 h-3" />
-              <span>2 Overdue</span>
+            <div className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-[#F0FDF4] text-[#16A34A] text-xs font-semibold">
+              <span>{completedCount} Completed</span>
             </div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
@@ -515,7 +541,7 @@ export default function HomePage() {
               {stats.timesheetStatus}
             </span>
             <div className="inline-flex items-center gap-1 mt-1.5 text-xs font-medium text-[#8A92A6]">
-              <span>This Week</span>
+              <span>Current Period</span>
             </div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0">
@@ -524,7 +550,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 4. Middle Section: My Projects, Attendance Calendar Matrix, and Team Orbit */}
+      {/* 4. Middle Section: My Projects, Attendance Status, and Team Orbit */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Card 1: My Projects */}
         <div className="lg:col-span-4 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col justify-between">
@@ -539,170 +565,83 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-2xl border border-[#F3EFEA] hover:border-[#FFCCA0] transition-colors">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#F5F3FF] text-[#7C3AED] font-bold text-xs flex items-center justify-center">
-                      HP
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-[#1F2937]">HRMS Platform</h3>
-                      <span className="text-[11px] text-[#8A92A6]">Sprint 3 • 68%</span>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-[#7C3AED]">68%</span>
-                </div>
-                <div className="w-full h-1.5 bg-[#F1ECE4] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: '68%' }}></div>
-                </div>
+            {projects.length === 0 ? (
+              <div className="text-center py-10 text-[#8A92A6] text-xs">
+                <FolderGit2 className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
+                <p className="font-semibold text-[#64748B] mb-1">No projects created yet</p>
+                <p className="text-[11px] mb-3">Add your first project to track milestones and tasks.</p>
+                <Link
+                  href="/projects"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FF7A00] text-white font-semibold text-xs shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Add Project</span>
+                </Link>
               </div>
-
-              <div className="p-3.5 rounded-2xl border border-[#F3EFEA] hover:border-[#FFCCA0] transition-colors">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] font-bold text-xs flex items-center justify-center">
-                      MA
+            ) : (
+              <div className="space-y-4">
+                {projects.slice(0, 3).map((proj) => (
+                  <Link
+                    key={proj.id}
+                    href={`/projects/${proj.id}`}
+                    className="block p-3.5 rounded-2xl border border-[#F3EFEA] hover:border-[#FFCCA0] transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#FFF2E5] text-[#FF7A00] font-bold text-xs flex items-center justify-center">
+                          {proj.name?.substring(0, 2).toUpperCase() || 'PR'}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-sm text-[#1F2937]">{proj.name}</h3>
+                          <span className="text-[11px] text-[#8A92A6]">{proj.status || 'ACTIVE'}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-[#1F2937]">Mobile App</h3>
-                      <span className="text-[11px] text-[#8A92A6]">v2.0 • 40%</span>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-[#2563EB]">40%</span>
-                </div>
-                <div className="w-full h-1.5 bg-[#F1ECE4] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#3B82F6] rounded-full" style={{ width: '40%' }}></div>
-                </div>
+                  </Link>
+                ))}
               </div>
-
-              <div className="p-3.5 rounded-2xl border border-[#F3EFEA] hover:border-[#FFCCA0] transition-colors">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#F0FDF4] text-[#16A34A] font-bold text-xs flex items-center justify-center">
-                      CP
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-[#1F2937]">Client Portal</h3>
-                      <span className="text-[11px] text-[#8A92A6]">Design • 85%</span>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-[#16A34A]">85%</span>
-                </div>
-                <div className="w-full h-1.5 bg-[#F1ECE4] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#10B981] rounded-full" style={{ width: '85%' }}></div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Card 2: Attendance Jan 2025 Matrix */}
+        {/* Card 2: Attendance Status Card */}
         <div className="lg:col-span-4 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base text-[#1F2937]">Attendance (Jan 2025)</h2>
+              <h2 className="font-bold text-base text-[#1F2937]">Attendance Summary</h2>
+              <Link
+                href="/attendance"
+                className="text-xs font-semibold text-[#FF7A00] hover:text-[#E66E00] flex items-center gap-1"
+              >
+                Details <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center mb-4">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-                <span key={d} className="text-[11px] font-semibold text-[#8A92A6] py-1">
-                  {d}
+            <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#F1ECE4] space-y-3">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#64748B]">Session Status:</span>
+                <span className="font-bold text-[#1F2937]">
+                  {clockedIn ? '🟢 Active Shift' : '⚪ Not Checked In'}
                 </span>
-              ))}
-
-              {[
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'off' },
-                { type: 'off' },
-              ].map((item, idx) => (
-                <div key={idx} className="p-1 flex items-center justify-center">
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium ${
-                      item.type === 'present'
-                        ? 'bg-[#EBFBF3] text-[#10B981]'
-                        : 'bg-[#F8F7F4] text-[#CBD5E1]'
-                    }`}
-                  >
-                    {item.type === 'present' ? '✓' : '•'}
-                  </div>
-                </div>
-              ))}
-
-              {[
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'late' },
-                { type: 'present' },
-                { type: 'off' },
-                { type: 'off' },
-              ].map((item, idx) => (
-                <div key={idx} className="p-1 flex items-center justify-center">
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium ${
-                      item.type === 'present'
-                        ? 'bg-[#EBFBF3] text-[#10B981]'
-                        : item.type === 'late'
-                        ? 'bg-[#FFFBEB] text-[#D97706]'
-                        : 'bg-[#F8F7F4] text-[#CBD5E1]'
-                    }`}
-                  >
-                    {item.type === 'present' ? '✓' : item.type === 'late' ? '⏱' : '•'}
-                  </div>
-                </div>
-              ))}
-
-              {[
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'absent' },
-                { type: 'present' },
-                { type: 'present' },
-                { type: 'off' },
-                { type: 'off' },
-              ].map((item, idx) => (
-                <div key={idx} className="p-1 flex items-center justify-center">
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium ${
-                      item.type === 'present'
-                        ? 'bg-[#EBFBF3] text-[#10B981]'
-                        : item.type === 'absent'
-                        ? 'bg-[#FEF2F2] text-[#EF4444]'
-                        : 'bg-[#F8F7F4] text-[#CBD5E1]'
-                    }`}
-                  >
-                    {item.type === 'present' ? '✓' : item.type === 'absent' ? '✕' : '•'}
-                  </div>
-                </div>
-              ))}
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#64748B]">Clock In Time:</span>
+                <span className="font-bold text-[#1F2937]">
+                  {clockInTimestamp
+                    ? new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '--:--'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#64748B]">Elapsed Today:</span>
+                <span className="font-bold text-[#FF7A00]">
+                  {pad2(elapsedHours)}h {pad2(elapsedMinutes)}m {pad2(elapsedSecs)}s
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-[#F1ECE4] text-xs">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
-                <span className="text-[#64748B]">Present:</span>
-                <span className="font-bold text-[#1F2937]">18</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span>
-                <span className="text-[#64748B]">Late:</span>
-                <span className="font-bold text-[#1F2937]">2</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span>
-                <span className="text-[#64748B]">Absent:</span>
-                <span className="font-bold text-[#1F2937]">1</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#94A3B8]"></span>
-                <span className="text-[#64748B]">Not Working:</span>
-                <span className="font-bold text-[#1F2937]">9</span>
-              </div>
+            <div className="mt-4 pt-4 border-t border-[#F1ECE4] text-xs text-[#8A92A6]">
+              All attendance records are synchronized directly with PostgreSQL.
             </div>
           </div>
         </div>
@@ -711,75 +650,67 @@ export default function HomePage() {
         <div className="lg:col-span-4 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-bold text-base text-[#1F2937]">Team Orbit</h2>
+              <h2 className="font-bold text-base text-[#1F2937]">Team Directory</h2>
               <Link
-                href="/approvals"
+                href="/team"
                 className="text-xs font-semibold text-[#FF7A00] hover:text-[#E66E00] flex items-center gap-1"
               >
                 View Team <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="relative w-full h-52 flex items-center justify-center">
-              <div className="absolute w-48 h-48 rounded-full border border-dashed border-[#F0E6D8]"></div>
-              <div className="absolute w-32 h-32 rounded-full border border-dashed border-[#F3EFEA]"></div>
-
-              <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#FF981A] to-[#FFB766] p-0.5 shadow-md z-10 flex items-center justify-center">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-sm text-[#FF7A00]">
-                  JC
-                </div>
+            {teamMembers.length === 0 ? (
+              <div className="text-center py-10 text-[#8A92A6] text-xs">
+                <Users className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
+                <p className="font-semibold text-[#64748B] mb-1">Only Administrator active</p>
+                <p className="text-[11px] mb-3">Add employees to form teams and collaborate.</p>
+                <Link
+                  href="/organization"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FF7A00] text-white font-semibold text-xs shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Invite Member</span>
+                </Link>
               </div>
-
-              <div
-                className="absolute -top-1 w-9 h-9 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm"
-                title="Emily Davis (Product)"
-              >
-                ED
+            ) : (
+              <div className="space-y-3 mt-4">
+                {teamMembers.slice(0, 3).map((emp) => (
+                  <div key={emp.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-[#FAF7F2]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-[#FFF2E5] text-[#FF7A00] font-bold text-xs flex items-center justify-center">
+                        {emp.firstName?.[0] || 'U'}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-xs text-[#1F2937] block">
+                          {emp.firstName} {emp.lastName}
+                        </span>
+                        <span className="text-[10px] text-[#8A92A6]">
+                          {emp.designation?.name || 'Staff'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div
-                className="absolute right-2 w-9 h-9 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm"
-                title="Michael Chen (Engineering)"
-              >
-                MC
-              </div>
-
-              <div
-                className="absolute bottom-1 w-9 h-9 rounded-full bg-[#8B5CF6] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm"
-                title="Sophia Martin (Design)"
-              >
-                SM
-              </div>
-
-              <div
-                className="absolute left-2 w-9 h-9 rounded-full bg-[#F59E0B] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm"
-                title="David Kim (Frontend)"
-              >
-                DK
-              </div>
-            </div>
-
-            <p className="text-center text-xs text-[#8A92A6] mt-1 font-medium">
-              4 members collaborating today
-            </p>
+            )}
           </div>
         </div>
       </div>
 
       {/* 5. Bottom Card: Work Assistant ✨ (AI Copilot Bar) */}
-      <div className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 shrink-0">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF8A00] to-[#FFB766] flex items-center justify-center text-white shadow-md shadow-orange-500/20">
-            <Sparkles className="w-6 h-6" />
+      <div className="bg-white rounded-3xl border border-[#F1ECE4] p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5 shrink-0 w-full md:w-auto">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-[#FF8A00] to-[#FFB766] flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-base text-[#1F2937]">Work Assistant</span>
-              <span className="text-xs bg-[#FFF3E8] text-[#FF8A00] font-bold px-1.5 py-0.5 rounded-md">
+              <span className="font-bold text-sm sm:text-base text-[#1F2937]">Work Assistant</span>
+              <span className="text-[10px] sm:text-xs bg-[#FFF3E8] text-[#FF8A00] font-bold px-1.5 py-0.5 rounded-md">
                 AI
               </span>
             </div>
-            <p className="text-xs text-[#8A92A6]">Your personal workplace copilot</p>
+            <p className="text-[11px] sm:text-xs text-[#8A92A6]">Your personal workplace copilot</p>
           </div>
         </div>
 
@@ -789,8 +720,8 @@ export default function HomePage() {
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder='Ask anything... e.g. "Create task for HRMS", "Review pending approvals", "Generate timesheet"'
-            className="w-full bg-transparent border-none outline-none text-sm text-[#1F2937] placeholder-[#9CA3AF]"
+            placeholder='Ask anything... e.g. "Create task", "Review timesheets"'
+            className="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#1F2937] placeholder-[#9CA3AF]"
           />
           <button type="button" className="text-[#9CA3AF] hover:text-[#1F2937] transition-colors p-1" title="Voice Input">
             <Mic className="w-4 h-4" />

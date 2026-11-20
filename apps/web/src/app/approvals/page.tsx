@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Users,
   CheckCircle2,
@@ -24,15 +25,10 @@ interface ApprovalItem {
 }
 
 export default function ApprovalsPage() {
-  const [approvals, setApprovals] = useState<ApprovalItem[]>([
-    { id: '1', type: 'TIMESHEET', name: 'Emily Davis', role: 'Product Designer', date: 'Jan 27', hoursOrDays: '8.0h', avatar: 'ED' },
-    { id: '2', type: 'TIMESHEET', name: 'Michael Chen', role: 'Frontend Engineer', date: 'Jan 27', hoursOrDays: '7.5h', avatar: 'MC' },
-    { id: '3', type: 'TIMESHEET', name: 'Sophia Martin', role: 'QA Specialist', date: 'Jan 27', hoursOrDays: '8.0h', avatar: 'SM' },
-  ]);
-
+  const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'timesheet' | 'leave'>('all');
-  const [teamCount, setTeamCount] = useState(12);
+  const [teamCount, setTeamCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchApprovals = async () => {
@@ -45,7 +41,7 @@ export default function ApprovalsPage() {
       // Fetch employees for team count
       const empRes = await api.organization.getEmployees();
       if (empRes.success && Array.isArray(empRes.data)) {
-        setTeamCount(empRes.data.length || 12);
+        setTeamCount(empRes.data.length);
       }
 
       const items: ApprovalItem[] = [];
@@ -58,7 +54,7 @@ export default function ApprovalsPage() {
             name: `${ts.employee?.firstName || 'Team'} ${ts.employee?.lastName || 'Member'}`,
             role: ts.employee?.designation?.name || 'Engineer',
             date: ts.periodStartDate ? new Date(ts.periodStartDate).toLocaleDateString() : 'This Week',
-            hoursOrDays: `${ts.totalMinutes ? (ts.totalMinutes / 60).toFixed(1) : 40}h`,
+            hoursOrDays: `${ts.totalMinutes ? (ts.totalMinutes / 60).toFixed(1) : 0}h`,
             avatar: `${ts.employee?.firstName?.[0] || 'T'}${ts.employee?.lastName?.[0] || 'M'}`,
           });
         });
@@ -78,9 +74,7 @@ export default function ApprovalsPage() {
         });
       }
 
-      if (items.length > 0) {
-        setApprovals(items);
-      }
+      setApprovals(items);
     } catch (err) {
       console.error('Error loading approvals:', err);
     } finally {
@@ -99,101 +93,82 @@ export default function ApprovalsPage() {
       } else {
         await api.hrms.approveLeave(item.id, 'Approved');
       }
-      setApprovals((prev) => prev.filter((a) => a.id !== item.id));
+      setApprovals((prev) => prev.filter((i) => i.id !== item.id));
       setMessage({ type: 'success', text: `Approved ${item.type.toLowerCase()} for ${item.name}` });
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Approval failed' });
+      setTimeout(() => setMessage(null), 4000);
+    } catch {
+      setMessage({ type: 'error', text: 'Action failed. Please try again.' });
     }
-    setTimeout(() => setMessage(null), 3500);
   };
 
   const handleReject = async (item: ApprovalItem) => {
     try {
       if (item.type === 'TIMESHEET') {
-        await api.timesheets.reject(item.id, 'Returned for revision');
+        await api.timesheets.reject(item.id, 'Rejected via review');
       } else {
-        await api.hrms.rejectLeave(item.id, 'Declined due to team schedule');
+        await api.hrms.rejectLeave(item.id, 'Rejected');
       }
-      setApprovals((prev) => prev.filter((a) => a.id !== item.id));
-      setMessage({ type: 'error', text: `Returned ${item.type.toLowerCase()} for ${item.name} for revision` });
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Rejection failed' });
+      setApprovals((prev) => prev.filter((i) => i.id !== item.id));
+      setMessage({ type: 'success', text: `Rejected request for ${item.name}` });
+      setTimeout(() => setMessage(null), 4000);
+    } catch {
+      setMessage({ type: 'error', text: 'Action failed. Please try again.' });
     }
-    setTimeout(() => setMessage(null), 3500);
   };
 
-  const filteredApprovals =
-    activeTab === 'all'
-      ? approvals
-      : approvals.filter((a) => a.type.toLowerCase() === activeTab);
+  const filteredApprovals = approvals.filter((item) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'timesheet') return item.type === 'TIMESHEET';
+    if (activeTab === 'leave') return item.type === 'LEAVE';
+    return true;
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Team Dashboard</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Review your direct reporting team members, daily attendance, and pending submissions.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Subtabs Pill */}
-          <div className="flex items-center p-1 bg-[#F5F2EB] rounded-full border border-[#EBE4D8]">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                activeTab === 'all'
-                  ? 'bg-white text-[#FF7A00] shadow-xs'
-                  : 'text-[#64748B] hover:text-[#1F2937]'
-              }`}
-            >
-              All ({approvals.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('timesheet')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                activeTab === 'timesheet'
-                  ? 'bg-white text-[#FF7A00] shadow-xs'
-                  : 'text-[#64748B] hover:text-[#1F2937]'
-              }`}
-            >
-              Timesheets
-            </button>
-            <button
-              onClick={() => setActiveTab('leave')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                activeTab === 'leave'
-                  ? 'bg-white text-[#FF7A00] shadow-xs'
-                  : 'text-[#64748B] hover:text-[#1F2937]'
-              }`}
-            >
-              Leaves
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       {message && (
         <div
-          className={`p-3 text-xs font-semibold rounded-2xl border flex items-center justify-between shadow-xs ${
+          className={`p-3 rounded-2xl text-xs font-semibold flex items-center justify-between border ${
             message.type === 'success'
               ? 'bg-[#EBFBF3] border-[#DCFCE7] text-[#10B981]'
-              : 'bg-[#FEF2F2] border-[#FECACA] text-[#DC2626]'
+              : 'bg-[#FEF2F2] border-[#FEE2E2] text-[#EF4444]'
           }`}
         >
           <span>{message.text}</span>
-          <button onClick={() => setMessage(null)} className="font-bold ml-4 p-1">
-            ✕
-          </button>
+          <button onClick={() => setMessage(null)} className="font-bold">✕</button>
         </div>
       )}
 
-      {/* 4 Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1F2937] tracking-tight">Approvals & Reviews</h1>
+          <p className="text-xs sm:text-sm text-[#8A92A6]">
+            Review employee timesheet hours and pending leave applications.
+          </p>
+        </div>
+
+        {/* Tab Filters */}
+        <div className="flex items-center p-1 bg-[#F5F2EB] rounded-full border border-[#EBE4D8]">
+          {(['all', 'timesheet', 'leave'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all ${
+                activeTab === tab
+                  ? 'bg-white text-[#FF7A00] shadow-xs'
+                  : 'text-[#64748B] hover:text-[#1F2937]'
+              }`}
+            >
+              {tab === 'all' ? 'All' : tab === 'timesheet' ? 'Timesheets' : 'Leaves'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 3 Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
         <div className="bg-white rounded-2xl border border-[#F1ECE4] p-5 shadow-xs flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-[#FFF2E5] text-[#FF7A00] flex items-center justify-center font-bold">
+          <div className="w-11 h-11 rounded-xl bg-[#EBFBF3] text-[#10B981] flex items-center justify-center font-bold">
             <Users className="w-5 h-5" />
           </div>
           <div>
@@ -201,18 +176,6 @@ export default function ApprovalsPage() {
               {teamCount}
             </span>
             <span className="text-xs font-medium text-[#8A92A6]">Team Members</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-[#F1ECE4] p-5 shadow-xs flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-[#EBFBF3] text-[#10B981] flex items-center justify-center font-bold">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">
-              {Math.max(1, teamCount - 1)}
-            </span>
-            <span className="text-xs font-medium text-[#8A92A6]">Present Today</span>
           </div>
         </div>
 
@@ -233,109 +196,70 @@ export default function ApprovalsPage() {
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">320h</span>
-            <span className="text-xs font-medium text-[#8A92A6]">Total Hours</span>
+            <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">0h</span>
+            <span className="text-xs font-medium text-[#8A92A6]">Total Overdue Hours</span>
           </div>
         </div>
       </div>
 
-      {/* Middle Section: Team Attendance Bar Chart & Pending Approvals */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Team Attendance Bar Chart (Cols 1-7) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base text-[#1F2937]">Team Attendance</h2>
-              <span className="text-xs font-semibold text-[#8A92A6]">This Week</span>
-            </div>
-
-            {/* Custom rounded bar chart matching the image */}
-            <div className="h-48 flex items-end justify-between px-6 pt-6 pb-2 gap-4">
-              {[
-                { day: 'Mon', height: '80%', count: 11 },
-                { day: 'Tue', height: '92%', count: 12 },
-                { day: 'Wed', height: '85%', count: 11 },
-                { day: 'Thu', height: '100%', count: 12 },
-                { day: 'Fri', height: '75%', count: 10 },
-              ].map((bar) => (
-                <div key={bar.day} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <span className="text-[11px] font-bold text-[#FF7A00] opacity-0 group-hover:opacity-100 transition-opacity">
-                    {bar.count}
-                  </span>
-                  <div
-                    className="w-full max-w-[42px] bg-gradient-to-t from-[#FF7A00] to-[#FFA338] rounded-t-xl transition-all duration-500 shadow-xs"
-                    style={{ height: bar.height }}
-                  ></div>
-                  <span className="text-xs font-semibold text-[#8A92A6]">{bar.day}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Main Approvals Content */}
+      <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-base text-[#1F2937]">
+            Pending Requests ({filteredApprovals.length})
+          </h2>
         </div>
 
-        {/* Pending Approvals List (Cols 8-12) */}
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base text-[#1F2937]">
-                Pending Approvals ({filteredApprovals.length})
-              </h2>
-              <button
-                onClick={() => setActiveTab('all')}
-                className="text-xs font-semibold text-[#FF7A00] hover:text-[#E66E00] flex items-center gap-1"
+        {filteredApprovals.length === 0 ? (
+          <div className="text-center py-16 text-[#8A92A6] text-xs">
+            <CheckCircle2 className="w-12 h-12 text-[#16A34A] mx-auto mb-3 opacity-90" />
+            <p className="font-semibold text-sm text-[#1F2937] mb-1">All Caught Up!</p>
+            <p className="text-[#8A92A6]">No pending timesheets or leave requests require your approval right now.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredApprovals.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border border-[#F3EFEA] hover:border-[#E2DDD5] transition-colors gap-3"
               >
-                View All <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {filteredApprovals.length === 0 ? (
-              <div className="text-center py-10 text-[#8A92A6] text-xs">
-                <CheckCircle2 className="w-8 h-8 text-[#16A34A] mx-auto mb-2 opacity-80" />
-                All pending approvals have been completed.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredApprovals.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3.5 rounded-2xl border border-[#F1ECE4] hover:border-[#FFCCA0] transition-colors flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[#E2E8F0] text-xs font-bold text-[#475569] flex items-center justify-center">
-                        {item.avatar}
-                      </div>
-                      <div>
-                        <span className="font-semibold text-sm text-[#1F2937] block leading-tight">
-                          {item.name}
-                        </span>
-                        <span className="text-xs text-[#8A92A6]">
-                          {item.date} • <strong className="text-[#1F2937]">{item.hoursOrDays}</strong>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={() => handleApprove(item)}
-                        className="w-7 h-7 rounded-full bg-[#EBFBF3] text-[#10B981] hover:bg-[#10B981] hover:text-white transition-colors flex items-center justify-center shadow-2xs"
-                        title="Approve"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
-                      <button
-                        onClick={() => handleReject(item)}
-                        className="w-7 h-7 rounded-full bg-[#FEF2F2] text-[#DC2626] hover:bg-[#DC2626] hover:text-white transition-colors flex items-center justify-center shadow-2xs"
-                        title="Reject"
-                      >
-                        <X className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#FFF2E5] text-[#FF7A00] flex items-center justify-center font-bold text-xs shrink-0">
+                    {item.avatar}
                   </div>
-                ))}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-[#1F2937]">{item.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF7F2] text-[#64748B] border border-[#E2DDD5]">
+                        {item.type}
+                      </span>
+                    </div>
+                    <span className="text-xs text-[#8A92A6]">
+                      {item.role} • {item.date} ({item.hoursOrDays})
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={() => handleReject(item)}
+                    className="p-2 rounded-xl text-[#EF4444] hover:bg-[#FEF2F2] border border-[#FECACA] transition-colors"
+                    title="Reject"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleApprove(item)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#10B981] hover:bg-[#059669] text-white font-semibold text-xs transition-colors shadow-xs"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Approve</span>
+                  </button>
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

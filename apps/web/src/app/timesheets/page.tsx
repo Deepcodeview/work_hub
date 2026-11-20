@@ -43,45 +43,8 @@ export default function TimesheetsPage() {
   const [newEntryTask, setNewEntryTask] = useState('');
   const [newEntryHours, setNewEntryHours] = useState('4.0');
 
-  // Table rows initialized with sensible defaults
-  const [rows, setRows] = useState<TimesheetRow[]>([
-    {
-      id: 'row-1',
-      projectId: 'proj-1',
-      project: 'HRMS Platform',
-      category: 'Development',
-      color: '#8B5CF6',
-      mon: 4.0,
-      tue: 4.0,
-      wed: 4.0,
-      thu: 4.0,
-      fri: 4.0,
-    },
-    {
-      id: 'row-2',
-      projectId: 'proj-2',
-      project: 'Mobile App',
-      category: 'Testing',
-      color: '#3B82F6',
-      mon: 2.0,
-      tue: 1.5,
-      wed: 2.0,
-      thu: 2.0,
-      fri: 2.0,
-    },
-    {
-      id: 'row-3',
-      projectId: 'proj-3',
-      project: 'Client Portal',
-      category: 'UI Design',
-      color: '#10B981',
-      mon: 1.0,
-      tue: 1.0,
-      wed: 1.0,
-      thu: 1.0,
-      fri: 1.0,
-    },
-  ]);
+  // Table rows initialized cleanly from backend or user entry
+  const [rows, setRows] = useState<TimesheetRow[]>([]);
 
   // Load live data on mount
   useEffect(() => {
@@ -349,7 +312,16 @@ export default function TimesheetsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F7F4EF]">
-                  {rows.map((row) => (
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-[#8A92A6]">
+                        <Clock className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
+                        <p className="font-semibold text-sm text-[#1F2937] mb-1">No Timesheet Entries Yet</p>
+                        <p className="text-xs mb-3">Click "+ Add Entry" to record your project hours for this period.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((row) => (
                     <tr key={row.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
                       <td className="py-4">
                         <div className="flex items-center gap-3 flex-wrap">
@@ -429,7 +401,8 @@ export default function TimesheetsPage() {
                         {calcRowTotal(row).toFixed(1)}
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
 
                   {/* Total Hours Row */}
                   <tr className="border-t-2 border-[#F1ECE4] bg-[#FAF7F2]/40 font-bold">

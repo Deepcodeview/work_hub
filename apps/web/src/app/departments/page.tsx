@@ -42,8 +42,8 @@ export default function DepartmentsPage() {
     loadData();
   }, []);
 
-  const totalHeadcount = employees.length > 0 ? employees.length : 42;
-  const activeProjectsCount = projects.length > 0 ? projects.length : 8;
+  const totalHeadcount = employees.length;
+  const activeProjectsCount = projects.length;
 
   return (
     <div className="space-y-6">
@@ -115,7 +115,7 @@ export default function DepartmentsPage() {
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">1</span>
+            <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">0</span>
             <span className="text-xs font-medium text-[#8A92A6]">At Risk</span>
           </div>
         </div>

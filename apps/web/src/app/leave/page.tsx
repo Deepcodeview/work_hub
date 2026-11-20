@@ -148,16 +148,15 @@ export default function LeavePage() {
       </div>
 
       {/* Leave Balances Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {(balances.length > 0
-          ? balances
-          : [
-              { id: 'b1', leaveType: { name: 'Paid Time Off', annualQuotaDays: 20 }, totalAccruedDays: 20, usedDays: 4, pendingDays: 0 },
-              { id: 'b2', leaveType: { name: 'Sick Leave', annualQuotaDays: 10 }, totalAccruedDays: 10, usedDays: 1, pendingDays: 0 },
-              { id: 'b3', leaveType: { name: 'Casual Leave', annualQuotaDays: 7 }, totalAccruedDays: 7, usedDays: 2, pendingDays: 0 },
-              { id: 'b4', leaveType: { name: 'Maternity/Paternity', annualQuotaDays: 90 }, totalAccruedDays: 90, usedDays: 0, pendingDays: 0 },
-            ]
-        ).map((b: any) => {
+      {balances.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-[#F1ECE4] p-8 text-center shadow-xs">
+          <Calendar className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
+          <p className="font-semibold text-sm text-[#1F2937] mb-1">No Leave Accruals Recorded</p>
+          <p className="text-xs text-[#8A92A6]">Leave quotas and balances will appear once allocated by organization HR.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {balances.map((b: any) => {
           const available = (b.totalAccruedDays || 20) - (b.usedDays || 0) - (b.pendingDays || 0);
           return (
             <div key={b.id} className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs">
@@ -186,7 +185,8 @@ export default function LeavePage() {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Leave History Table */}
       <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs overflow-hidden">

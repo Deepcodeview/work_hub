@@ -22,14 +22,21 @@ export function Sidebar() {
   const pathname = usePathname();
   const { isSidebarOpen, closeSidebar } = useNavigation();
 
-  const navItems = [
+  interface NavItem {
+    label: string;
+    href: string;
+    icon: any;
+    badge?: number;
+  }
+
+  const navItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Attendance', href: '/attendance', icon: Clock },
     { label: 'Timesheet', href: '/timesheets', icon: FileText },
     { label: 'Projects', href: '/projects', icon: FolderKanban },
     { label: 'Tasks', href: '/tasks', icon: CheckSquare },
     { label: 'Team', href: '/team', icon: Users },
-    { label: 'Approvals', href: '/approvals', icon: CheckCircle2, badge: 3 },
+    { label: 'Approvals', href: '/approvals', icon: CheckCircle2 },
     { label: 'Reports', href: '/departments', icon: BarChart3 },
     { label: 'Organization', href: '/organization', icon: Building2 },
     { label: 'Settings', href: '/automations', icon: Settings },
@@ -52,7 +59,7 @@ export function Sidebar() {
           isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="overflow-y-auto flex-1">
+        <div className="overflow-y-auto flex-1 no-scrollbar">
           {/* Brand Logo Header & Mobile Close Button */}
           <div className="p-6 pb-4 flex items-center justify-between">
             <Link href="/" onClick={closeSidebar} className="flex items-center gap-3">

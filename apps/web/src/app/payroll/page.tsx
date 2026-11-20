@@ -37,32 +37,10 @@ export default function PayrollPage() {
         api.hrms.getPayrollRuns(),
       ]);
 
-      if (slipRes.success && Array.isArray(slipRes.data) && slipRes.data.length > 0) {
+      if (slipRes.success && Array.isArray(slipRes.data)) {
         setPayslips(slipRes.data);
       } else {
-        // High fidelity sample data matching standard compensation
-        setPayslips([
-          {
-            id: 'pay-1',
-            grossPay: 8500,
-            deductions: 1850,
-            netPay: 6650,
-            daysWorked: 22,
-            status: 'PAID',
-            createdAt: new Date().toISOString(),
-            payrollRun: { payPeriodMonth: 1, payPeriodYear: 2025, status: 'COMPLETED' },
-          },
-          {
-            id: 'pay-2',
-            grossPay: 8500,
-            deductions: 1850,
-            netPay: 6650,
-            daysWorked: 21,
-            status: 'PAID',
-            createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-            payrollRun: { payPeriodMonth: 12, payPeriodYear: 2024, status: 'COMPLETED' },
-          },
-        ]);
+        setPayslips([]);
       }
 
       if (runRes.success && Array.isArray(runRes.data)) {
