@@ -6,6 +6,7 @@
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "nest start",
+    "start:prod": "node dist/main",
     "lint": "node -e \"console.log('API lint passed')\"",
     "typecheck": "tsc --noEmit",
     "test": "jest --forceExit",
