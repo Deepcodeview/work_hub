@@ -414,25 +414,33 @@ export default function AttendancePage() {
             <h2 className="font-bold text-sm text-[#1F2937] mb-3">Today's Activity</h2>
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center py-1 border-b border-[#F5F2EB]">
-                <span className="text-[#8A92A6]">Work Hours</span>
-                <span className="font-bold text-[#1F2937]">7h 45m</span>
+                <span className="text-[#8A92A6]">Active Work Session</span>
+                <span className="font-bold text-[#1F2937] font-mono">
+                  {pad2(elapsedHours)}h {pad2(elapsedMinutes)}m {pad2(elapsedSecs)}s
+                </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-[#F5F2EB]">
                 <span className="text-[#8A92A6]">Breaks</span>
-                <span className="font-bold text-[#1F2937]">45m</span>
+                <span className="font-bold text-[#1F2937]">
+                  {onBreak ? '☕ On Break' : '0m'}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1">
-                <span className="font-semibold text-[#1F2937]">Total</span>
-                <span className="font-bold text-[#FF7A00]">8h 30m</span>
+                <span className="font-semibold text-[#1F2937]">Session Status</span>
+                <span className="font-bold text-[#FF7A00]">
+                  {clockedIn ? '● In Progress' : '○ Not Clocked In'}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs flex items-center justify-between">
             <div>
-              <span className="text-xs font-medium text-[#8A92A6] block mb-1">This Month</span>
-              <span className="text-xl font-bold text-[#1F2937]">Attendance</span>
-              <span className="text-xs text-[#10B981] font-semibold block mt-1">+ 2.4% vs target</span>
+              <span className="text-xs font-medium text-[#8A92A6] block mb-1">Standard Shift Target</span>
+              <span className="text-xl font-bold text-[#1F2937]">8h 00m</span>
+              <span className="text-xs text-[#10B981] font-semibold block mt-1">
+                {shiftProgressPercent}% target reached
+              </span>
             </div>
 
             <div className="relative w-20 h-20 flex items-center justify-center">

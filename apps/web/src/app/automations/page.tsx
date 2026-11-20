@@ -32,48 +32,8 @@ interface PendingAiAction {
 }
 
 export default function AutomationsPage() {
-  const [rules, setRules] = useState<AutomationRule[]>([
-    {
-      id: 'rule-1',
-      name: 'Urgent Task Notification',
-      description: 'Notify project lead immediately when an urgent task is created',
-      triggerEvent: 'TASK_CREATED',
-      isActive: true,
-      runCount: 28,
-      lastRunAt: '10 mins ago',
-    },
-    {
-      id: 'rule-2',
-      name: 'Auto-Acknowledge Leave Requests',
-      description: 'Send confirmation email and notify reporting manager upon leave submission',
-      triggerEvent: 'LEAVE_REQUESTED',
-      isActive: true,
-      runCount: 14,
-      lastRunAt: '2 hours ago',
-    },
-    {
-      id: 'rule-3',
-      name: 'Timesheet Reminder',
-      description: 'Trigger weekly notification to employees with unsubmitted timesheets',
-      triggerEvent: 'WEEKLY_SCHEDULE',
-      isActive: true,
-      runCount: 104,
-      lastRunAt: 'Yesterday',
-    },
-  ]);
-
-  const [pendingActions, setPendingActions] = useState<PendingAiAction[]>([
-    {
-      id: 'conf-1',
-      actionType: 'CREATE_TASK',
-      summary: 'Create follow-up task: "Review Quarterly Architecture Specs"',
-      proposedPayload: {
-        title: 'Review Quarterly Architecture Specs',
-        priority: 'HIGH',
-        estimatedMinutes: 90,
-      },
-    },
-  ]);
+  const [rules, setRules] = useState<AutomationRule[]>([]);
+  const [pendingActions, setPendingActions] = useState<PendingAiAction[]>([]);
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,10 +46,10 @@ export default function AutomationsPage() {
         api.automations.getPendingAiActions(),
       ]);
 
-      if (rulesRes.success && Array.isArray(rulesRes.data) && rulesRes.data.length > 0) {
+      if (rulesRes.success && Array.isArray(rulesRes.data)) {
         setRules(rulesRes.data);
       }
-      if (aiRes.success && Array.isArray(aiRes.data) && aiRes.data.length > 0) {
+      if (aiRes.success && Array.isArray(aiRes.data)) {
         setPendingActions(aiRes.data);
       }
     } catch (err) {
@@ -235,7 +195,12 @@ export default function AutomationsPage() {
       {/* Active Rules List */}
       <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs divide-y divide-[#F7F4EF]">
         <h2 className="text-base font-bold text-[#1F2937] mb-4">Configured Automation Rules</h2>
-        {rules.map((rule) => (
+        {rules.length === 0 ? (
+          <div className="text-center py-8 text-xs text-[#8A92A6]">
+            No automation rules configured yet.
+          </div>
+        ) : (
+          rules.map((rule) => (
           <div key={rule.id} className="py-4 flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -256,7 +221,7 @@ export default function AutomationsPage() {
               </span>
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

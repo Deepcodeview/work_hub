@@ -363,21 +363,10 @@ export default function OrganizationPage() {
         <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs">
           <h2 className="font-bold text-sm text-[#1F2937] mb-4">Hierarchical Reporting Tree</h2>
           {orgTree.length === 0 ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl border border-[#F1ECE4] bg-[#FAF7F2] max-w-sm">
-                <span className="font-bold text-xs text-[#1F2937] block">Executive Leadership</span>
-                <span className="text-xs text-[#8A92A6]">CEO / VP Engineering</span>
-              </div>
-              <div className="ml-8 border-l-2 border-[#E2DDD5] pl-6 space-y-3">
-                <div className="p-3.5 rounded-2xl border border-[#F1ECE4] bg-white shadow-xs max-w-sm">
-                  <span className="font-semibold text-xs text-[#1F2937] block">Engineering Management</span>
-                  <span className="text-[11px] text-[#8A92A6]">Maria Rivers • 8 Direct Reports</span>
-                </div>
-                <div className="p-3.5 rounded-2xl border border-[#F1ECE4] bg-white shadow-xs max-w-sm">
-                  <span className="font-semibold text-xs text-[#1F2937] block">Product & Design</span>
-                  <span className="text-[11px] text-[#8A92A6]">David Kim • 5 Direct Reports</span>
-                </div>
-              </div>
+            <div className="text-center py-10 text-[#8A92A6] text-xs">
+              <Network className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
+              <p className="font-semibold text-sm text-[#1F2937] mb-1">Single Administrator Workspace</p>
+              <p className="text-xs">Reporting hierarchy and tree nodes will automatically render as employees and managers are added.</p>
             </div>
           ) : (
             <div className="space-y-3">
