@@ -112,7 +112,7 @@ export function Header() {
     { name: 'Team', href: '/team', icon: Users, color: 'bg-rose-50 text-rose-600 border-rose-100' },
     { name: 'Reports', href: '/departments', icon: BarChart3, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
     { name: 'Organization', href: '/organization', icon: Building2, color: 'bg-cyan-50 text-cyan-600 border-cyan-100' },
-    { name: 'Automations', href: '/automations', icon: Settings, color: 'bg-teal-50 text-teal-600 border-teal-100' },
+    { name: 'Settings', href: '/settings', icon: Settings, color: 'bg-teal-50 text-teal-600 border-teal-100' },
     { name: 'Calendar', href: '/calendar', icon: Calendar, color: 'bg-violet-50 text-violet-600 border-violet-100' },
     { name: 'Documents', href: '/documents', icon: FileText, color: 'bg-sky-50 text-sky-600 border-sky-100' },
     { name: 'Chat', href: '/chat', icon: Sparkles, color: 'bg-pink-50 text-pink-600 border-pink-100' },

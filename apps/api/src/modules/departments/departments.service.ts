@@ -123,6 +123,30 @@ export class DepartmentsService {
     return updated;
   }
 
+  async delete(id: string, actorId?: string): Promise<any> {
+    const dept = await this.findById(id);
+
+    // Reassign any employees belonging to this department to null
+    await this.prisma.employee.updateMany({
+      where: { departmentId: id },
+      data: { departmentId: null },
+    });
+
+    const deleted = await this.prisma.department.delete({
+      where: { id },
+    });
+
+    await this.audit.log({
+      actorId,
+      action: 'department.deleted',
+      entity: 'department',
+      entityId: id,
+      details: { name: deleted.name, code: deleted.code },
+    });
+
+    return { success: true, message: `Department ${deleted.name} deleted successfully` };
+  }
+
   private async ensureDepartmentHeadRole(employeeId: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },

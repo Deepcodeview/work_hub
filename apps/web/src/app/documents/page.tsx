@@ -98,15 +98,9 @@ export default function DocumentsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937]">Company Documents &amp; Files</h1>
-          <p className="text-sm text-[#64748B]">Cloud storage repository with folder permissions and version control</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowFolderModal(true)}>+ New Folder</Button>
-          <Button onClick={() => setShowFileModal(true)}>+ Upload Document</Button>
-        </div>
+      <div className="flex justify-end items-center gap-2 mb-6">
+        <Button variant="outline" onClick={() => setShowFolderModal(true)}>+ New Folder</Button>
+        <Button onClick={() => setShowFileModal(true)}>+ Upload Document</Button>
       </div>
 
       {showFolderModal && (

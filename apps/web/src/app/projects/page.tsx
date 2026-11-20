@@ -107,15 +107,8 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Title & Subtabs */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Projects</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Manage your cross-functional development roadmaps, milestones, and deliverable schedules.
-          </p>
-        </div>
-
+      {/* Subtabs & Actions */}
+      <div className="flex justify-end items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           {/* Subtabs Pill */}
           <div className="flex items-center p-1 bg-[#F5F2EB] rounded-full border border-[#EBE4D8]">

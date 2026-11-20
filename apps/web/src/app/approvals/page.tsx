@@ -138,16 +138,8 @@ export default function ApprovalsPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1F2937] tracking-tight">Approvals & Reviews</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Review employee timesheet hours and pending leave applications.
-          </p>
-        </div>
-
-        {/* Tab Filters */}
+      {/* Tab Filters */}
+      <div className="flex justify-end items-center">
         <div className="flex items-center p-1 bg-[#F5F2EB] rounded-full border border-[#EBE4D8]">
           {(['all', 'timesheet', 'leave'] as const).map((tab) => (
             <button

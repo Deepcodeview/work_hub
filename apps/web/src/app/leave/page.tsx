@@ -129,15 +129,8 @@ export default function LeavePage() {
         </div>
       )}
 
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Leave Management</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            View annual leave entitlements, apply for time off, and track approvals.
-          </p>
-        </div>
-
+      {/* Actions */}
+      <div className="flex justify-end items-center">
         <button
           onClick={() => setShowApplyModal(true)}
           className="px-4 py-2 rounded-full bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all active:scale-98"

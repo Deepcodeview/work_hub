@@ -279,6 +279,15 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    updateDepartment: (id: string, data: any) =>
+      apiFetch(`/departments/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    deleteDepartment: (id: string) =>
+      apiFetch(`/departments/${id}`, {
+        method: 'DELETE',
+      }),
     getTree: () => apiFetch('/organization/tree'),
   },
 

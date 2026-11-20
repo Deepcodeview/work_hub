@@ -214,16 +214,8 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Title & Subtabs */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Attendance</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Track your daily work hours, GPS verified clock-in, breaks, and monthly attendance.
-          </p>
-        </div>
-
-        {/* Subtabs Pill */}
+      {/* Subtabs Pill */}
+      <div className="flex justify-end items-center">
         <div className="flex items-center p-1 bg-[#F5F2EB] rounded-full border border-[#EBE4D8] flex-wrap">
           <button
             onClick={() => setActiveTab('attendance')}

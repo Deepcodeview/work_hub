@@ -52,15 +52,8 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-6">
-      {/* Title & Filter Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Team Members</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Collaborate with your direct teammates, cross-functional squads, and engineering leads.
-          </p>
-        </div>
-
+      {/* Actions & Filter Bar */}
+      <div className="flex justify-end items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-semibold text-[#16A34A] bg-[#F0FDF4] px-3 py-1.5 rounded-full border border-[#DCFCE7]">
             {filtered.length} Active Collaborators

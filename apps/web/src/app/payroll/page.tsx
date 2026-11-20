@@ -107,15 +107,8 @@ export default function PayrollPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Payroll & Compensation</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Automated payroll calculation, tax deductions, and official digital payslips.
-          </p>
-        </div>
-
+      {/* Actions Bar */}
+      <div className="flex justify-end items-center gap-4">
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-[#16A34A] bg-[#F0FDF4] px-3.5 py-1.5 rounded-full border border-[#DCFCE7] flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>

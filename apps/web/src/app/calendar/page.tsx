@@ -90,11 +90,7 @@ export default function CalendarPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937]">Company Calendar &amp; Meetings</h1>
-          <p className="text-sm text-[#64748B]">Schedule team events, video conferences, meeting notes, and action items</p>
-        </div>
+      <div className="flex justify-end items-center mb-6">
         <Button onClick={() => setShowModal(true)}>+ Schedule Event</Button>
       </div>
 

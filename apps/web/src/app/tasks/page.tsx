@@ -195,15 +195,8 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* Title & View Switcher */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Tasks</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Sprint backlog, Kanban progress stages, and team assignment board.
-          </p>
-        </div>
-
+      {/* Controls & View Switcher */}
+      <div className="flex justify-end items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           {/* Project Filter */}
           {projectsList.length > 0 && (

@@ -114,15 +114,8 @@ export default function AutomationsPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Workplace Automations & AI</h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6]">
-            Configure event-driven workflow rules, audit executions, and authorize AI copilot actions.
-          </p>
-        </div>
-
+      {/* Actions */}
+      <div className="flex justify-end items-center gap-4">
         <button
           onClick={async () => {
             const res = await api.automations.triggerEvent('WEEKLY_SCHEDULE', { manual: true });

@@ -59,14 +59,8 @@ export default function DirectoryPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#F1E9E0]">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1F2937]">Employee Directory</h1>
-          <p className="text-sm text-[#64748B] mt-1">
-            People, designations, departments, and reporting managers
-          </p>
-        </div>
+    <div className="max-w-6xl mx-auto px-2 sm:px-6 py-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-end gap-4 pb-4">
         <div className="flex items-center gap-3">
           <Button variant="primary" size="sm">+ New Employee</Button>
         </div>

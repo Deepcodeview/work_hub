@@ -66,7 +66,7 @@ export function Sidebar() {
     },
     {
       label: 'Settings',
-      href: '/automations',
+      href: '/settings',
       icon: Settings,
       roles: ['SYSTEM_ADMIN'],
     },
@@ -101,11 +101,11 @@ export function Sidebar() {
 
       {/* Main Sidebar Drawer */}
       <aside
-        className={`w-64 h-screen bg-[#FFFFFF] border-r border-[#F1ECE4] flex flex-col justify-between fixed top-0 left-0 z-50 select-none transition-transform duration-300 ease-in-out ${
+        className={`w-64 h-screen bg-[#FFFFFF] border-r border-[#F1ECE4] flex flex-col justify-between fixed top-0 left-0 z-50 select-none overflow-hidden transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="overflow-y-auto flex-1 no-scrollbar">
+        <div className="overflow-y-auto flex-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {/* Brand Logo Header & Mobile Close Button */}
           <div className="p-6 pb-4 flex items-center justify-between">
             <Link href="/" onClick={closeSidebar} className="flex items-center gap-3">

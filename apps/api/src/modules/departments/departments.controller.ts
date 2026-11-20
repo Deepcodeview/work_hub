@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -71,6 +72,19 @@ export class DepartmentsController {
     return {
       success: true,
       data: updated,
+    };
+  }
+
+  @Delete(':id')
+  @Roles(Role.SYSTEM_ADMIN, Role.HR_ADMIN)
+  async deleteDepartment(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string
+  ): Promise<ApiResponse<any>> {
+    const res = await this.departmentsService.delete(id, actorId);
+    return {
+      success: true,
+      data: res,
     };
   }
 }
