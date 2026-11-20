@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -17,16 +17,26 @@ import {
   X,
 } from './icons';
 import { useNavigation } from './navigation-context';
+import { getStoredUser } from '../lib/api';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { isSidebarOpen, closeSidebar } = useNavigation();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const stored = getStoredUser();
+    if (stored) {
+      setUser(stored);
+    }
+  }, []);
 
   interface NavItem {
     label: string;
     href: string;
     icon: any;
     badge?: number;
+    roles?: string[]; // If specified, only users with one of these roles will see this item
   }
 
   const navItems: NavItem[] = [
@@ -36,11 +46,47 @@ export function Sidebar() {
     { label: 'Projects', href: '/projects', icon: FolderKanban },
     { label: 'Tasks', href: '/tasks', icon: CheckSquare },
     { label: 'Team', href: '/team', icon: Users },
-    { label: 'Approvals', href: '/approvals', icon: CheckCircle2 },
-    { label: 'Reports', href: '/departments', icon: BarChart3 },
-    { label: 'Organization', href: '/organization', icon: Building2 },
-    { label: 'Settings', href: '/automations', icon: Settings },
+    {
+      label: 'Approvals',
+      href: '/approvals',
+      icon: CheckCircle2,
+      roles: ['SYSTEM_ADMIN', 'HR_ADMIN', 'DEPARTMENT_HEAD', 'REPORTING_MANAGER'],
+    },
+    {
+      label: 'Reports',
+      href: '/departments',
+      icon: BarChart3,
+      roles: ['SYSTEM_ADMIN', 'HR_ADMIN', 'DEPARTMENT_HEAD'],
+    },
+    {
+      label: 'Organization',
+      href: '/organization',
+      icon: Building2,
+      roles: ['SYSTEM_ADMIN', 'HR_ADMIN'],
+    },
+    {
+      label: 'Settings',
+      href: '/automations',
+      icon: Settings,
+      roles: ['SYSTEM_ADMIN'],
+    },
   ];
+
+  // If roles exist on user, use them; default to SYSTEM_ADMIN for admin session
+  const userRoles: string[] = user?.roles?.length ? user.roles : ['SYSTEM_ADMIN'];
+  const isSuperAdmin = userRoles.includes('SYSTEM_ADMIN');
+
+  // Filter items based on active user's roles
+  const visibleNavItems = navItems.filter((item) => {
+    if (!item.roles || item.roles.length === 0) return true;
+    return item.roles.some((r) => userRoles.includes(r));
+  });
+
+  const roleTitle = isSuperAdmin
+    ? 'System Admin'
+    : userRoles[0]
+    ? userRoles[0].replace('_', ' ')
+    : 'Employee';
 
   return (
     <>
@@ -86,9 +132,9 @@ export function Sidebar() {
             </button>
           </div>
 
-          {/* Navigation Items */}
+          {/* Navigation Items (Role-Filtered) */}
           <nav className="px-3.5 space-y-1 mt-2">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const currentPath = pathname || '';
               const isActive =
                 item.href === '/'
@@ -128,55 +174,22 @@ export function Sidebar() {
           </nav>
         </div>
 
-        {/* Warm Mountain / Sunrise Illustration at Bottom of Sidebar */}
+        {/* User Role Card at Bottom of Sidebar */}
         <div className="p-4 relative overflow-hidden shrink-0">
-          <div className="w-full h-28 rounded-2xl bg-gradient-to-b from-[#FFF5EC] to-[#FFE8D1] border border-[#FDE1C5]/60 p-4 relative overflow-hidden flex flex-col justify-end shadow-inner">
-            {/* Subtle sun */}
-            <div className="absolute top-2 right-4 w-9 h-9 rounded-full bg-[#FFB86B]/40 blur-xs"></div>
-            {/* Layered mountain shapes */}
-            <svg
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              preserveAspectRatio="none"
-              viewBox="0 0 200 120"
-              fill="none"
-            >
-              {/* Distant mountain layer */}
-              <path
-                d="M -10,120 L 40,65 L 110,120 Z"
-                fill="#FFCCA0"
-                opacity="0.45"
-              />
-              <path
-                d="M 60,120 L 130,50 L 210,120 Z"
-                fill="#FFB67E"
-                opacity="0.5"
-              />
-              {/* Foreground mountain layers */}
-              <path
-                d="M 10,120 L 80,75 L 160,120 Z"
-                fill="#FFA561"
-                opacity="0.6"
-              />
-              <path
-                d="M 90,120 L 160,70 L 220,120 Z"
-                fill="#FF9447"
-                opacity="0.65"
-              />
-              <path
-                d="M -20,120 L 50,85 L 120,120 Z"
-                fill="#FF832E"
-                opacity="0.75"
-              />
-            </svg>
-
-            <div className="relative z-10">
-              <span className="text-[11px] font-bold text-[#D96B00] uppercase tracking-wider block">
-                WorkHub Pro
+          <div className="w-full rounded-2xl bg-gradient-to-b from-[#FFF5EC] to-[#FFE8D1] border border-[#FDE1C5]/70 p-3.5 relative overflow-hidden flex flex-col justify-end shadow-inner">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-extrabold text-[#D96B00] uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/80 border border-orange-200">
+                {isSuperAdmin ? '👑 Super Admin' : roleTitle}
               </span>
-              <span className="text-xs font-semibold text-[#8B4800]">
-                All systems online
-              </span>
+              <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
             </div>
+
+            <span className="text-xs font-bold text-[#1F2937] truncate block leading-tight">
+              {user?.employee ? `${user.employee.firstName} ${user.employee.lastName}` : 'System Administrator'}
+            </span>
+            <span className="text-[11px] text-[#8B4800]/80 truncate block">
+              {user?.email || 'admin@workhub.internal'}
+            </span>
           </div>
         </div>
       </aside>
