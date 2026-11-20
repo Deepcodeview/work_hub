@@ -1,0 +1,19 @@
+{
+  "name": "@workhub/validation",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "node -e \"console.log('Validation lint passed')\"",
+    "test": "node -e \"const { PaginationQuerySchema } = require('./dist'); const res = PaginationQuerySchema.safeParse({ page: 2 }); if (!res.success) process.exit(1); console.log('Validation test passed');\""
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

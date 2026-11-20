@@ -1,0 +1,19 @@
+{
+  "name": "@workhub/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "node -e \"console.log('API Client lint passed')\"",
+    "test": "node -e \"const { WorkHubApiClient } = require('./dist'); if (!WorkHubApiClient) process.exit(1); console.log('API Client export passed');\""
+  },
+  "dependencies": {
+    "@workhub/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

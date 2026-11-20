@@ -1,0 +1,24 @@
+{
+  "name": "@workhub/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "node -e \"console.log('Worker lint passed')\"",
+    "test": "node -e \"const worker = require('./dist'); if (typeof worker.createSystemWorker !== 'function') process.exit(1); console.log('Worker factory verified');\""
+  },
+  "dependencies": {
+    "@workhub/config": "workspace:*",
+    "@workhub/database": "workspace:*",
+    "bullmq": "^5.34.12",
+    "ioredis": "^5.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

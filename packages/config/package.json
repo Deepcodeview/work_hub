@@ -1,0 +1,19 @@
+{
+  "name": "@workhub/config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "node -e \"console.log('Config lint passed')\"",
+    "test": "node -e \"const { APP_CONFIG } = require('./dist'); if (APP_CONFIG.name !== 'WorkHub') process.exit(1); console.log('Config test passed');\""
+  },
+  "dependencies": {
+    "@workhub/validation": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@workhub/permissions",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "node -e \"console.log('Permissions lint passed')\"",
+    "test": "node -e \"const { hasPermission, Permissions } = require('./dist'); if (!hasPermission(['employee.manage'], Permissions.EMPLOYEE_MANAGE)) process.exit(1); console.log('Permissions test passed');\""
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

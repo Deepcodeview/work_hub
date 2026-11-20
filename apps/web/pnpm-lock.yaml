@@ -1,0 +1,59 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@workhub/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@workhub/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@workhub/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@workhub/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      react:
+        specifier: ^19.0.0
+        version: 19.3.1
+
+  ../..: {}
+
+  ../../packages/api-client: {}
+
+  ../../packages/config: {}
+
+  ../../packages/contracts: {}
+
+  ../../packages/database: {}
+
+  ../../packages/design-tokens: {}
+
+  ../../packages/permissions: {}
+
+  ../../packages/ui: {}
+
+  ../../packages/validation: {}
+
+  ../api: {}
+
+  ../mobile: {}
+
+  ../worker: {}
+
+packages:
+
+  react@19.3.1:
+    resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
+    engines: {node: '>=0.10.0'}
+
+snapshots:
+
+  react@19.3.1: {}
