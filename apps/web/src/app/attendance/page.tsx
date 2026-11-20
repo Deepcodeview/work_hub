@@ -261,189 +261,192 @@ export default function AttendancePage() {
       {/* Main Top Punch Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Punch Clock & Geofence Map Card (Cols 1-8) */}
-        <div className="lg:col-span-8 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col items-center md:items-start space-y-4 shrink-0 w-full md:w-auto">
-            {/* Status Pill & In-time */}
-            <div className="flex items-center justify-between w-full md:w-auto gap-3">
-              <div
-                className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${
-                  clockedIn
-                    ? onBreak
-                      ? 'bg-[#FEF3C7] border-[#FDE68A] text-[#D97706]'
-                      : 'bg-[#F0FDF4] border-[#DCFCE7] text-[#16A34A]'
-                    : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B]'
-                }`}
-              >
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
+        <div className="lg:col-span-8 bg-white rounded-3xl border border-[#F1ECE4] p-5 sm:p-6 shadow-xs overflow-hidden">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-center">
+            {/* Left: Punch Stopwatch & Actions */}
+            <div className="xl:col-span-7 flex flex-col items-center sm:items-start space-y-4 w-full min-w-0">
+              {/* Status Pill & In-time */}
+              <div className="flex items-center justify-between w-full gap-3">
+                <div
+                  className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${
                     clockedIn
                       ? onBreak
-                        ? 'bg-[#D97706]'
-                        : 'bg-[#22C55E] animate-pulse'
-                      : 'bg-[#94A3B8]'
-                  }`}
-                />
-                <span>
-                  {clockedIn
-                    ? onBreak
-                      ? '● On Break (Timer Paused)'
-                      : '● Active Work Session'
-                    : '○ Not Clocked In'}
-                </span>
-              </div>
-
-              {clockInTimestamp && (
-                <span className="text-[11px] font-semibold text-[#8A92A6]">
-                  In at {new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              )}
-            </div>
-
-            {/* Live Work Stopwatch Card */}
-            <div className="w-full flex flex-col items-center md:items-start p-4 rounded-2xl bg-gradient-to-b from-[#FFFDF9] to-[#FFF7EE] border border-[#FDE6D2]/80 shadow-inner">
-              <div className="flex items-center justify-between w-full mb-2">
-                <span className="text-[11px] font-bold text-[#8A92A6] uppercase tracking-wider">
-                  {clockedIn
-                    ? 'Live Work Time Elapsed'
-                    : completedMinutesToday > 0
-                    ? "Today's Total Work Completed"
-                    : 'Shift Timer (Ready)'}
-                </span>
-                <span className="text-[11px] font-bold text-[#FF7A00]">
-                  Target: 8h 00m
-                </span>
-              </div>
-
-              {/* Digital Timer Blocks (Hours : Minutes : Seconds) */}
-              <div className="flex items-center gap-2 font-mono my-1">
-                {/* Hours Block */}
-                <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
-                    {pad2(displayHours)}
-                  </span>
-                  <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
-                    Hours
-                  </span>
-                </div>
-
-                <span className="text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
-
-                {/* Minutes Block */}
-                <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
-                    {pad2(displayMinutes)}
-                  </span>
-                  <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
-                    Minutes
-                  </span>
-                </div>
-
-                <span className="text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
-
-                {/* Seconds Block */}
-                <div className="flex flex-col items-center bg-[#FFF2E2] border border-[#FFD2A6] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-[#FF7A00] leading-none">
-                    {pad2(displaySecs)}
-                  </span>
-                  <span className="text-[9px] font-bold text-[#FF7A00] uppercase tracking-wider mt-1">
-                    Seconds
-                  </span>
-                </div>
-              </div>
-
-              {/* Shift Progress Bar */}
-              <div className="w-full mt-3">
-                <div className="flex justify-between text-[11px] text-[#8A92A6] font-medium mb-1">
-                  <span>Shift Goal (480m)</span>
-                  <span className="font-bold text-[#FF7A00]">{shiftProgressPercent}%</span>
-                </div>
-                <div className="w-full h-2 bg-[#F1ECE4] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#FFB366] to-[#FF7A00] rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(4, shiftProgressPercent)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 w-full">
-              <button
-                disabled={loading}
-                onClick={clockedIn ? handleClockOut : handleClockIn}
-                className={`flex-1 px-8 py-3 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-50 ${
-                  clockedIn
-                    ? 'bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white shadow-red-500/25 hover:from-[#DC2626] hover:to-[#B91C1C]'
-                    : 'bg-gradient-to-r from-[#FF981A] to-[#FF7A00] text-white shadow-orange-500/25 hover:from-[#E68715] hover:to-[#E66E00]'
-                }`}
-              >
-                {loading ? (
-                  <span>Processing...</span>
-                ) : clockedIn ? (
-                  <>
-                    <Pause className="w-4 h-4 fill-white" />
-                    <span>Clock Out for Day</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 fill-white" />
-                    <span>Clock In for Shift</span>
-                  </>
-                )}
-              </button>
-
-              {clockedIn && (
-                <button
-                  disabled={loading}
-                  onClick={handleToggleBreak}
-                  className={`px-5 py-3 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition-all ${
-                    onBreak
-                      ? 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]'
-                      : 'bg-white text-[#64748B] border-[#E2DDD5] hover:bg-[#F9F7F4]'
+                        ? 'bg-[#FEF3C7] border-[#FDE68A] text-[#D97706]'
+                        : 'bg-[#F0FDF4] border-[#DCFCE7] text-[#16A34A]'
+                      : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B]'
                   }`}
                 >
-                  <Coffee className="w-3.5 h-3.5" />
-                  <span>{onBreak ? 'Resume Work' : 'Take Break'}</span>
-                </button>
-              )}
-            </div>
-          </div>
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      clockedIn
+                        ? onBreak
+                          ? 'bg-[#D97706]'
+                          : 'bg-[#22C55E] animate-pulse'
+                        : 'bg-[#94A3B8]'
+                    }`}
+                  />
+                  <span>
+                    {clockedIn
+                      ? onBreak
+                        ? '● On Break (Timer Paused)'
+                        : '● Active Work Session'
+                      : '○ Not Clocked In'}
+                  </span>
+                </div>
 
-          {/* Right: Geofence Vector Map Graphic */}
-          <div className="w-full md:w-80 h-56 rounded-3xl bg-[#FFF8F0] border border-[#FDE5CF] p-4 flex flex-col justify-between relative overflow-hidden shadow-xs shrink-0">
-            {/* Vector Map Background: streets, highways, and blocks */}
-            <svg
-              className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
-              viewBox="0 0 320 220"
-              fill="none"
-              preserveAspectRatio="none"
-            >
-              <path d="M -20 40 L 340 60" stroke="#FDBA74" strokeWidth="6" strokeLinecap="round" />
-              <path d="M 40 -20 L 70 240" stroke="#FDBA74" strokeWidth="8" strokeLinecap="round" />
-              <path d="M 160 -20 L 150 240" stroke="#FED7AA" strokeWidth="5" strokeLinecap="round" />
-              <path d="M -20 150 L 340 130" stroke="#FED7AA" strokeWidth="5" strokeLinecap="round" />
-              <path d="M 240 -20 L 270 240" stroke="#FED7AA" strokeWidth="4" strokeLinecap="round" />
-              <path d="M -20 90 L 340 180" stroke="#FED7AA" strokeWidth="3" strokeDasharray="6 4" />
-              <path d="M 80 180 L 300 20" stroke="#FDBA74" strokeWidth="4" />
-            </svg>
+                {clockInTimestamp && (
+                  <span className="text-[11px] font-semibold text-[#8A92A6]">
+                    In at {new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
 
-            {/* Top / Center: Geofence Circular Boundary Zone + Pin Marker */}
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center">
-              <div className="w-24 h-24 rounded-full bg-[#FF8A00]/10 border-2 border-dashed border-[#FF8A00]/40 flex items-center justify-center shadow-xs">
-                <div className="w-14 h-14 rounded-full bg-[#FF8A00]/15 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FF7A00] to-[#FFA338] text-white flex items-center justify-center shadow-md shadow-orange-500/30">
-                    <MapPin className="w-5 h-5 fill-white" />
+              {/* Live Work Stopwatch Card */}
+              <div className="w-full flex flex-col items-center sm:items-start p-4 rounded-2xl bg-gradient-to-b from-[#FFFDF9] to-[#FFF7EE] border border-[#FDE6D2]/80 shadow-inner">
+                <div className="flex items-center justify-between w-full mb-2">
+                  <span className="text-[11px] font-bold text-[#8A92A6] uppercase tracking-wider">
+                    {clockedIn
+                      ? 'Live Work Time Elapsed'
+                      : completedMinutesToday > 0
+                      ? "Today's Total Work Completed"
+                      : 'Shift Timer (Ready)'}
+                  </span>
+                  <span className="text-[11px] font-bold text-[#FF7A00]">
+                    Target: 8h 00m
+                  </span>
+                </div>
+
+                {/* Digital Timer Blocks (Hours : Minutes : Seconds) */}
+                <div className="flex items-center gap-2 font-mono my-1 w-full justify-center sm:justify-start">
+                  {/* Hours Block */}
+                  <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[58px] sm:min-w-[62px] shadow-xs">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
+                      {pad2(displayHours)}
+                    </span>
+                    <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
+                      Hours
+                    </span>
+                  </div>
+
+                  <span className="text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
+
+                  {/* Minutes Block */}
+                  <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[58px] sm:min-w-[62px] shadow-xs">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
+                      {pad2(displayMinutes)}
+                    </span>
+                    <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
+                      Minutes
+                    </span>
+                  </div>
+
+                  <span className="text-2xl font-bold text-[#FF7A00] animate-pulse">:</span>
+
+                  {/* Seconds Block */}
+                  <div className="flex flex-col items-center bg-[#FFF2E2] border border-[#FFD2A6] rounded-2xl px-3.5 py-2 min-w-[58px] sm:min-w-[62px] shadow-xs">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-[#FF7A00] leading-none">
+                      {pad2(displaySecs)}
+                    </span>
+                    <span className="text-[9px] font-bold text-[#FF7A00] uppercase tracking-wider mt-1">
+                      Seconds
+                    </span>
+                  </div>
+                </div>
+
+                {/* Shift Progress Bar */}
+                <div className="w-full mt-3">
+                  <div className="flex justify-between text-[11px] text-[#8A92A6] font-medium mb-1">
+                    <span>Shift Goal (480m)</span>
+                    <span className="font-bold text-[#FF7A00]">{shiftProgressPercent}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-[#F1ECE4] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#FFB366] to-[#FF7A00] rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(4, shiftProgressPercent)}%` }}
+                    />
                   </div>
                 </div>
               </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 w-full">
+                <button
+                  disabled={loading}
+                  onClick={clockedIn ? handleClockOut : handleClockIn}
+                  className={`flex-1 px-6 sm:px-8 py-3 rounded-full font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-50 ${
+                    clockedIn
+                      ? 'bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white shadow-red-500/25 hover:from-[#DC2626] hover:to-[#B91C1C]'
+                      : 'bg-gradient-to-r from-[#FF981A] to-[#FF7A00] text-white shadow-orange-500/25 hover:from-[#E68715] hover:to-[#E66E00]'
+                  }`}
+                >
+                  {loading ? (
+                    <span>Processing...</span>
+                  ) : clockedIn ? (
+                    <>
+                      <Pause className="w-4 h-4 fill-white" />
+                      <span>Clock Out for Day</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-white" />
+                      <span>Clock In for Shift</span>
+                    </>
+                  )}
+                </button>
+
+                {clockedIn && (
+                  <button
+                    disabled={loading}
+                    onClick={handleToggleBreak}
+                    className={`px-4 sm:px-5 py-3 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition-all ${
+                      onBreak
+                        ? 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]'
+                        : 'bg-white text-[#64748B] border-[#E2DDD5] hover:bg-[#F9F7F4]'
+                    }`}
+                  >
+                    <Coffee className="w-3.5 h-3.5" />
+                    <span>{onBreak ? 'Resume Work' : 'Take Break'}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Bottom Info Section: Clean, perfectly legible, no overlapping lines */}
-            <div className="relative z-10 bg-white/95 backdrop-blur-xs rounded-2xl py-2 px-3 border border-[#F1ECE4] shadow-xs text-center flex flex-col items-center">
-              <span className="font-bold text-xs text-[#1F2937]">Office HQ, New York</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
-                <span className="text-[11px] font-semibold text-[#16A34A]">Within 25 meters</span>
+            {/* Right: Geofence Vector Map Graphic */}
+            <div className="xl:col-span-5 w-full h-56 rounded-2xl sm:rounded-3xl bg-[#FFF8F0] border border-[#FDE5CF] p-4 flex flex-col justify-between relative overflow-hidden shadow-xs">
+              {/* Vector Map Background: streets, highways, and blocks */}
+              <svg
+                className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+                viewBox="0 0 320 220"
+                fill="none"
+                preserveAspectRatio="none"
+              >
+                <path d="M -20 40 L 340 60" stroke="#FDBA74" strokeWidth="6" strokeLinecap="round" />
+                <path d="M 40 -20 L 70 240" stroke="#FDBA74" strokeWidth="8" strokeLinecap="round" />
+                <path d="M 160 -20 L 150 240" stroke="#FED7AA" strokeWidth="5" strokeLinecap="round" />
+                <path d="M -20 150 L 340 130" stroke="#FED7AA" strokeWidth="5" strokeLinecap="round" />
+                <path d="M 240 -20 L 270 240" stroke="#FED7AA" strokeWidth="4" strokeLinecap="round" />
+                <path d="M -20 90 L 340 180" stroke="#FED7AA" strokeWidth="3" strokeDasharray="6 4" />
+                <path d="M 80 180 L 300 20" stroke="#FDBA74" strokeWidth="4" />
+              </svg>
+
+              {/* Top / Center: Geofence Circular Boundary Zone + Pin Marker */}
+              <div className="relative z-10 flex-1 flex flex-col items-center justify-center">
+                <div className="w-24 h-24 rounded-full bg-[#FF8A00]/10 border-2 border-dashed border-[#FF8A00]/40 flex items-center justify-center shadow-xs">
+                  <div className="w-14 h-14 rounded-full bg-[#FF8A00]/15 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FF7A00] to-[#FFA338] text-white flex items-center justify-center shadow-md shadow-orange-500/30">
+                      <MapPin className="w-5 h-5 fill-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Info Section: Clean, perfectly legible, no overlapping lines */}
+              <div className="relative z-10 bg-white/95 backdrop-blur-xs rounded-2xl py-2 px-3 border border-[#F1ECE4] shadow-xs text-center flex flex-col items-center">
+                <span className="font-bold text-xs text-[#1F2937]">Office HQ, New York</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+                  <span className="text-[11px] font-semibold text-[#16A34A]">Within 25 meters</span>
+                </div>
               </div>
             </div>
           </div>
@@ -451,7 +454,7 @@ export default function AttendancePage() {
 
         {/* Today's Activity & This Month (Cols 9-12) */}
         <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
-          <div className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs flex flex-col justify-between">
+          <div className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs flex flex-col justify-between overflow-hidden">
             <h2 className="font-bold text-sm text-[#1F2937] mb-3">Today's Activity</h2>
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center py-1 border-b border-[#F5F2EB]">
