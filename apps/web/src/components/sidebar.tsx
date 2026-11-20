@@ -14,8 +14,6 @@ import {
   BarChart3,
   Building2,
   Settings,
-  Calendar,
-  Sparkles,
   X,
 } from './icons';
 import { useNavigation } from './navigation-context';
@@ -45,15 +43,14 @@ export function Sidebar() {
     { label: 'Home', href: '/', icon: Home },
     { label: 'Attendance', href: '/attendance', icon: Clock },
     { label: 'Timesheet', href: '/timesheets', icon: FileText },
-    { label: 'Calendar', href: '/calendar', icon: Calendar, badge: 3 },
     { label: 'Projects', href: '/projects', icon: FolderKanban },
     { label: 'Tasks', href: '/tasks', icon: CheckSquare },
     { label: 'Team', href: '/team', icon: Users },
-    { label: 'Leave & Holidays', href: '/leave', icon: Sparkles },
     {
       label: 'Approvals',
       href: '/approvals',
       icon: CheckCircle2,
+      badge: 3,
       roles: ['SYSTEM_ADMIN', 'HR_ADMIN', 'DEPARTMENT_HEAD', 'REPORTING_MANAGER'],
     },
     {
@@ -105,31 +102,17 @@ export function Sidebar() {
 
       {/* Main Sidebar Drawer */}
       <aside
-        className={`w-64 h-screen bg-[#FFFFFF] border-r border-[#F1ECE4] flex flex-col justify-between fixed top-0 left-0 z-50 select-none overflow-hidden transition-transform duration-300 ease-in-out ${
+        className={`w-64 fixed top-16 left-0 bottom-0 h-[calc(100vh-4rem)] bg-[#FFFFFF] border-r border-[#F1ECE4] z-40 select-none overflow-hidden transition-transform duration-300 ease-in-out flex flex-col justify-between ${
           isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="overflow-y-auto flex-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {/* Brand Logo Header & Mobile Close Button */}
-          <div className="p-6 pb-4 flex items-center justify-between">
-            <Link href="/" onClick={closeSidebar} className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF981A] to-[#FF7A00] flex items-center justify-center text-white font-bold text-xl shadow-md shadow-orange-500/20 shrink-0">
-                W
-              </div>
-              <div>
-                <span className="font-bold text-lg text-[#1F2937] tracking-tight block leading-tight">
-                  Work Hub
-                </span>
-                <span className="text-[11px] font-medium text-[#94A3B8] tracking-normal block">
-                  Workforce Management
-                </span>
-              </div>
-            </Link>
-
-            {/* Close Button on Mobile */}
+        <div className="overflow-y-auto flex-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-3">
+          {/* Mobile Close Button (shown only when opened on mobile) */}
+          <div className="px-4 py-1 flex items-center justify-between lg:hidden border-b border-[#F1ECE4] mb-2">
+            <span className="text-xs font-bold text-[#8A92A6]">Menu</span>
             <button
               onClick={closeSidebar}
-              className="p-1.5 rounded-xl text-[#8A92A6] hover:text-[#1F2937] hover:bg-[#FAF7F2] lg:hidden transition-colors"
+              className="p-1 rounded-xl text-[#8A92A6] hover:text-[#1F2937] hover:bg-[#FAF7F2] transition-colors"
               title="Close Menu"
             >
               <X className="w-5 h-5" />
@@ -137,7 +120,7 @@ export function Sidebar() {
           </div>
 
           {/* Navigation Items (Role-Filtered) */}
-          <nav className="px-3.5 space-y-1 mt-2">
+          <nav className="px-3.5 space-y-1">
             {visibleNavItems.map((item) => {
               const currentPath = pathname || '';
               const isActive =
@@ -176,32 +159,6 @@ export function Sidebar() {
               );
             })}
           </nav>
-
-          {/* Upcoming Team Timeline & Holiday Mini Card */}
-          <div className="px-3.5 mt-4 mb-3">
-            <Link
-              href="/calendar"
-              onClick={closeSidebar}
-              className="block p-3 rounded-2xl bg-[#FFFBF6] border border-[#FDE5CC] hover:border-[#FFB766] transition-all group shadow-xs"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF7A00] flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-                  Live Timeline
-                </span>
-                <span className="text-[10px] font-semibold text-[#8A92A6] group-hover:text-[#FF7A00]">
-                  Calendar →
-                </span>
-              </div>
-              <p className="text-xs font-bold text-[#1F2937] truncate">
-                10:00 AM • Team Standup (Meet)
-              </p>
-              <div className="mt-1.5 pt-1.5 border-t border-[#F5E6D3] flex items-center justify-between text-[10px] text-[#8A92A6]">
-                <span>🌴 Next Holiday:</span>
-                <span className="font-semibold text-[#B45309]">Thanksgiving (Nov 26)</span>
-              </div>
-            </Link>
-          </div>
         </div>
 
         {/* User Role Card at Bottom of Sidebar */}

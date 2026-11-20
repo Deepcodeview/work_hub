@@ -119,9 +119,9 @@ export function Header() {
   ];
 
   return (
-    <header className="h-16 bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#F1ECE4] fixed top-0 right-0 left-0 lg:left-64 z-30 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-3 transition-all duration-300">
-      {/* Left Group: Hamburger on Mobile + Search Bar */}
-      <div className="flex items-center gap-3 flex-1 max-w-lg">
+    <header className="h-16 bg-[#FFFFFF] border-b border-[#F1ECE4] fixed top-0 right-0 left-0 w-full z-50 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-3 transition-all duration-300">
+      {/* Left Group: Hamburger on Mobile + Brand Logo */}
+      <div className="flex items-center gap-3 shrink-0">
         {/* Mobile Hamburger Toggle Button */}
         <button
           onClick={toggleSidebar}
@@ -132,9 +132,26 @@ export function Header() {
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Pill Search Bar */}
+        {/* Brand Logo Header matching reference */}
+        <Link href="/" className="flex items-center gap-3 select-none">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF981A] to-[#FF7A00] flex items-center justify-center text-white font-bold text-xl shadow-md shadow-orange-500/20 shrink-0">
+            W
+          </div>
+          <div className="hidden sm:block">
+            <span className="font-bold text-base sm:text-lg text-[#1F2937] tracking-tight block leading-tight">
+              Work Hub
+            </span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-[#94A3B8] tracking-normal block">
+              Workforce Management
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      {/* Center: Search Bar */}
+      <div className="flex-1 max-w-xl mx-2 sm:mx-6">
         <div className="relative w-full">
-          <div className="flex items-center gap-2.5 px-3.5 py-2 bg-[#F6F3EE] hover:bg-[#F2EEE7] transition-colors rounded-full border border-[#EBE3D7]/80 text-sm text-[#8A94A6]">
+          <div className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 bg-[#F6F3EE] hover:bg-[#F2EEE7] transition-colors rounded-full border border-[#EBE3D7]/80 text-sm text-[#8A94A6]">
             <Search className="w-4 h-4 text-[#9CA3AF] shrink-0" />
             <input
               type="text"
@@ -205,8 +222,8 @@ export function Header() {
             <span className="font-semibold text-xs sm:text-sm text-[#1F2937] leading-tight block">
               {displayName}
             </span>
-            <span className="text-[10px] sm:text-[11px] font-medium text-[#8A92A6] block leading-tight">
-              {displayRole}
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#8A92A6] block leading-tight uppercase tracking-wider">
+              {displayRole.toUpperCase()}
             </span>
           </div>
           <ChevronDown className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#8A94A6] hidden sm:block" />
