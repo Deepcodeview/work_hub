@@ -1,0 +1,54 @@
+name: WorkHub CD Auto Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to AWS Lightsail Server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Executing Remote SSH Commands for Deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            echo "🚀 Deployment started on $(hostname) at $(date)"
+            
+            # Navigate to project directory
+            cd /home/ubuntu/work_hub || exit 1
+
+            # Pull latest changes from main branch
+            echo "📥 Pulling latest changes from GitHub..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Install dependencies
+            echo "📦 Installing dependencies..."
+            pnpm install --frozen-lockfile=false
+
+            # Run database migrations and generate Prisma client
+            echo "🗄️ Running database migrations..."
+            pnpm --filter @workhub/database db:generate
+            pnpm --filter @workhub/database db:deploy
+
+            # Build production Next.js and NestJS packages
+            echo "🔨 Building application for production..."
+            pnpm build
+
+            # Zero-downtime reload via PM2
+            echo "🔄 Restarting application services..."
+            pm2 reload workhub-api || pm2 start "pnpm --filter @workhub/api start:prod" --name "workhub-api"
+            pm2 reload workhub-web || pm2 start "pnpm --filter @workhub/web start" --name "workhub-web"
+            pm2 save
+
+            echo "✅ Deployment completed successfully at $(date)!"
