@@ -35,14 +35,14 @@ export default function MailPage() {
 
   const fetchAccountAndFolders = async () => {
     try {
-      const token = localStorage.getItem('token') || '';
-      const accRes = await fetch('http://localhost:3001/api/v1/mail/account', {
+      const token = localStorage.getItem('workhub_token') || localStorage.getItem('token') || '';
+      const accRes = await fetch('/api/v1/mail/account', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (accRes.ok) {
         const acc = await accRes.json();
         setAccount(acc);
-        const foldRes = await fetch(`http://localhost:3001/api/v1/mail/accounts/${acc.id}/folders`, {
+        const foldRes = await fetch(`/api/v1/mail/accounts/${acc.id}/folders`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (foldRes.ok) {
@@ -62,9 +62,10 @@ export default function MailPage() {
   const fetchMessages = async (folderId: string) => {
     if (!account) return;
     try {
+      const token = localStorage.getItem('workhub_token') || localStorage.getItem('token') || '';
       const res = await fetch(
-        `http://localhost:3001/api/v1/mail/accounts/${account.id}/folders/${folderId}/messages`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` } },
+        `/api/v1/mail/accounts/${account.id}/folders/${folderId}/messages`,
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (res.ok) {
         setMessages(await res.json());
@@ -88,11 +89,12 @@ export default function MailPage() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/v1/mail/send', {
+      const token = localStorage.getItem('workhub_token') || localStorage.getItem('token') || '';
+      const res = await fetch('/api/v1/mail/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           to: composeForm.to.split(',').map((s) => s.trim()),

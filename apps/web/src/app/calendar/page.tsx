@@ -32,8 +32,8 @@ export default function CalendarPage() {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/v1/calendar/events', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+      const res = await fetch('/api/v1/calendar/events', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}` },
       });
       if (res.ok) {
         setEvents(await res.json());
@@ -52,11 +52,11 @@ export default function CalendarPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/v1/calendar/events', {
+      const res = await fetch('/api/v1/calendar/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify(form),
       });
@@ -72,11 +72,11 @@ export default function CalendarPage() {
 
   const handleRespond = async (eventId: string, status: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/v1/calendar/events/${eventId}/respond`, {
+      const res = await fetch(`/api/v1/calendar/events/${eventId}/respond`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({ status }),
       });

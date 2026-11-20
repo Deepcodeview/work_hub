@@ -23,8 +23,8 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 4000;
-  await app.listen(port);
-  console.log(`WorkHub API running at http://localhost:${port}/api/v1`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`WorkHub API running at http://0.0.0.0:${port}/api/v1`);
 }
 
 bootstrap();

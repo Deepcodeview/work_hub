@@ -30,8 +30,8 @@ export default function ChatPage() {
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/v1/chat/conversations', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+      const res = await fetch('/api/v1/chat/conversations', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -49,8 +49,8 @@ export default function ChatPage() {
 
   const fetchMessages = async (convId: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/v1/chat/conversations/${convId}/messages`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+      const res = await fetch(`/api/v1/chat/conversations/${convId}/messages`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}` },
       });
       if (res.ok) {
         setMessages(await res.json());
@@ -75,11 +75,11 @@ export default function ChatPage() {
     if (!newMessage.trim() || !activeConv) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/api/v1/chat/conversations/${activeConv.id}/messages`, {
+      const res = await fetch(`/api/v1/chat/conversations/${activeConv.id}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({ content: newMessage }),
       });
@@ -95,11 +95,11 @@ export default function ChatPage() {
   const handleCreateConversation = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/v1/chat/conversations', {
+      const res = await fetch('/api/v1/chat/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({
           type: newType,

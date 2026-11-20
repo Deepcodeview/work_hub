@@ -31,10 +31,10 @@ export default function DocumentsPage() {
 
   const fetchData = async () => {
     try {
-      const headers = { Authorization: `Bearer ${localStorage.getItem('token') || ''}` };
+      const headers = { Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}` };
       const [foldRes, fileRes] = await Promise.all([
-        fetch('http://localhost:3001/api/v1/documents/folders', { headers }),
-        fetch('http://localhost:3001/api/v1/documents/files', { headers }),
+        fetch('/api/v1/documents/folders', { headers }),
+        fetch('/api/v1/documents/files', { headers }),
       ]);
       if (foldRes.ok) setFolders(await foldRes.json());
       if (fileRes.ok) setFiles(await fileRes.json());
@@ -52,11 +52,11 @@ export default function DocumentsPage() {
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/v1/documents/folders', {
+      const res = await fetch('/api/v1/documents/folders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({ name: folderName }),
       });
@@ -73,11 +73,11 @@ export default function DocumentsPage() {
   const handleUploadFile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/v1/documents/files', {
+      const res = await fetch('/api/v1/documents/files', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({
           name: fileName,

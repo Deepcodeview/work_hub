@@ -28,7 +28,7 @@ export default function DirectoryPage() {
     setError(null);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('workhub_token') : null;
-      const url = `http://localhost:4000/api/v1/employees${query ? `?search=${encodeURIComponent(query)}` : ''}`;
+      const url = `/api/v1/employees${query ? `?search=${encodeURIComponent(query)}` : ''}`;
       const res = await fetch(url, {
         headers: {
           ...(token && { Authorization: `Bearer ${token}` }),
