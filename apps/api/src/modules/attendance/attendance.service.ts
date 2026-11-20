@@ -34,7 +34,7 @@ export class AttendanceService {
     });
 
     if (existingOpenSession) {
-      return existingOpenSession;
+      throw new BadRequestException('An active attendance session is already open. Please clock out before starting a new session.');
     }
 
     const now = new Date();
