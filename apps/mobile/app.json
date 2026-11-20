@@ -1,20 +1,33 @@
 {
   "expo": {
     "name": "WorkHub",
-    "slug": "workhub",
-    "version": "0.1.0",
+    "slug": "workhub-mobile",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#FFFAF5"
+      "backgroundColor": "#FFFAF5",
+      "resizeMode": "contain"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.workhub.mobile"
     },
     "android": {
+      "package": "com.workhub.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "INTERNET"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#FFFAF5"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "workhub-mobile"
       }
     }
   }

@@ -5,6 +5,11 @@ import { AppShell } from '../components/app-shell';
 export const metadata: Metadata = {
   title: 'WorkHub — Workforce Operating System',
   description: 'Enterprise workforce operations, attendance, timesheets, and project management',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

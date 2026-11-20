@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="mobileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFA02E" />
+      <stop offset="100%" stop-color="#FF7A00" />
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="256" fill="url(#mobileGrad)" />
+  <path d="M256 304 L344 704 L456 416 L568 416 L680 704 L768 304 L864 304 L736 784 L632 784 L512 504 L392 784 L288 784 L160 304 Z" fill="#FFFFFF" />
+</svg>

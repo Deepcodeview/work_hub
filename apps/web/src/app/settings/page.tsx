@@ -59,10 +59,45 @@ interface OfficePolicy {
   autoClockOutHours: number;
 }
 
+export interface AiProviderConfig {
+  activeProvider: 'anthropic' | 'gemini' | 'grok' | 'openai';
+  anthropicApiKey: string;
+  anthropicModel: string;
+  geminiApiKey: string;
+  geminiModel: string;
+  grokApiKey: string;
+  grokModel: string;
+  openaiApiKey: string;
+  openaiModel: string;
+  enableTaskCreation: boolean;
+  enableMailDrafting: boolean;
+  enableMeetingScheduling: boolean;
+  enableTimesheetFill: boolean;
+  systemPrompt: string;
+}
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'google' | 'outlook' | 'meetings' | 'policy'>('google');
+  const [activeTab, setActiveTab] = useState<'google' | 'outlook' | 'ai' | 'meetings' | 'policy'>('google');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
+
+  // AI Providers Configuration State (Claude, Gemini, Grok)
+  const [aiConfig, setAiConfig] = useState<AiProviderConfig>({
+    activeProvider: 'anthropic',
+    anthropicApiKey: 'sk-ant-api03-••••••••••••••••••••••••••••',
+    anthropicModel: 'claude-3-5-sonnet-20241022',
+    geminiApiKey: 'AIzaSy••••••••••••••••••••••••••••',
+    geminiModel: 'gemini-2.0-flash',
+    grokApiKey: 'xai-••••••••••••••••••••••••••••',
+    grokModel: 'grok-2',
+    openaiApiKey: 'sk-proj-••••••••••••••••••••••••••••',
+    openaiModel: 'gpt-4o',
+    enableTaskCreation: true,
+    enableMailDrafting: true,
+    enableMeetingScheduling: true,
+    enableTimesheetFill: true,
+    systemPrompt: 'You are Work Assistant, an elite AI workplace copilot for WorkHub. Help enterprise teams create tasks, draft professional emails, schedule meetings, fill timesheets, and optimize workforce schedules.',
+  });
 
   // Google Workspace State
   const [googleConfig, setGoogleConfig] = useState<GoogleConfig>({
@@ -161,11 +196,25 @@ export default function SettingsPage() {
 
         const savedMeetings = localStorage.getItem('workhub_synced_meetings');
         if (savedMeetings) setMeetings(JSON.parse(savedMeetings));
+
+        const savedAi = localStorage.getItem('workhub_ai_config');
+        if (savedAi) setAiConfig(JSON.parse(savedAi));
       } catch (e) {
         console.error('Error loading config from localStorage:', e);
       }
     }
   }, []);
+
+  const saveAiConfig = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('workhub_ai_config', JSON.stringify(aiConfig));
+    }
+    setFeedback({
+      type: 'success',
+      message: `AI Workplace Copilot configured! Default active provider: ${aiConfig.activeProvider.toUpperCase()}.`,
+    });
+    setTimeout(() => setFeedback(null), 3500);
+  };
 
   const saveGoogleConfig = () => {
     if (typeof window !== 'undefined') {
@@ -191,12 +240,25 @@ export default function SettingsPage() {
     setTimeout(() => setFeedback(null), 3500);
   };
 
-  const testConnection = (provider: 'google' | 'outlook') => {
+  const testConnection = (provider: 'google' | 'outlook' | 'ai') => {
     setTestingConnection(provider);
     setTimeout(() => {
       setTestingConnection(null);
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      if (provider === 'google') {
+      if (provider === 'ai') {
+        const pName =
+          aiConfig.activeProvider === 'anthropic'
+            ? 'Anthropic Claude 3.5 Sonnet'
+            : aiConfig.activeProvider === 'gemini'
+            ? 'Google Gemini 2.0 Flash'
+            : aiConfig.activeProvider === 'grok'
+            ? 'xAI Grok-2'
+            : 'OpenAI GPT-4o';
+        setFeedback({
+          type: 'success',
+          message: `${pName} API handshake verified! Ready to compose mails, tasks, meetings & timesheets.`,
+        });
+      } else if (provider === 'google') {
         setGoogleConfig((prev) => {
           const updated = { ...prev, isConnected: true, lastSyncedAt: `Today at ${now}` };
           if (typeof window !== 'undefined') localStorage.setItem('workhub_google_workspace_config', JSON.stringify(updated));
@@ -295,6 +357,14 @@ export default function SettingsPage() {
             }`}
           >
             Microsoft 365 & Outlook
+          </button>
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
+              activeTab === 'ai' ? 'bg-white text-[#FF7A00] shadow-xs' : 'text-[#64748B] hover:text-[#1F2937]'
+            }`}
+          >
+            AI Providers (Claude, Gemini, Grok)
           </button>
           <button
             onClick={() => setActiveTab('meetings')}
@@ -645,6 +715,319 @@ export default function SettingsPage() {
 
               <div className="p-3 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD] text-[11px] text-[#0369A1]">
                 ⚡ Last automated sync completed: <span className="font-bold">{outlookConfig.lastSyncedAt}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- TAB 3: AI & COPILOT PROVIDERS -------------------- */}
+      {activeTab === 'ai' && (
+        <div className="space-y-6">
+          {/* Status Header Banner */}
+          <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF7A00] to-[#FFB766] flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-base font-bold text-[#1F2937]">Work Assistant AI Copilot Engine</h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F0FDF4] text-[#16A34A] border border-[#DCFCE7]">
+                    ● Active Provider: {aiConfig.activeProvider.toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-xs text-[#8A92A6]">
+                  Connect Anthropic Claude, Google Gemini, xAI Grok, or OpenAI to empower all employees with AI meeting scheduling, email drafting, task creation, and automated timesheets.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <button
+                onClick={() => testConnection('ai')}
+                disabled={testingConnection === 'ai'}
+                className="px-4 py-2 rounded-full border border-[#E2DDD5] text-xs font-semibold text-[#1F2937] hover:bg-[#FAF7F2] transition-colors flex items-center gap-2"
+              >
+                {testingConnection === 'ai' && (
+                  <div className="w-3.5 h-3.5 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                )}
+                <span>Test AI Handshake</span>
+              </button>
+              <button
+                onClick={saveAiConfig}
+                className="px-5 py-2 rounded-full bg-[#FF7A00] hover:bg-[#E66E00] text-white text-xs font-semibold shadow-xs"
+              >
+                Save AI Settings
+              </button>
+            </div>
+          </div>
+
+          {/* Active Provider Selector Grid */}
+          <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs space-y-4">
+            <h3 className="font-bold text-sm text-[#1F2937]">Select Default Workspace Intelligence Engine</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Anthropic Claude */}
+              <div
+                onClick={() => setAiConfig({ ...aiConfig, activeProvider: 'anthropic' })}
+                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                  aiConfig.activeProvider === 'anthropic'
+                    ? 'border-[#D97706] bg-[#FFFBEB] shadow-xs'
+                    : 'border-[#F1ECE4] bg-white hover:border-[#FDE68A]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl">🟣</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#FDE68A] text-[#D97706]">
+                    Anthropic
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm text-[#1F2937]">Claude 3.5 Sonnet</h4>
+                <p className="text-[11px] text-[#8A92A6] mt-0.5">Top-tier nuanced drafting, code, and scheduling logic.</p>
+              </div>
+
+              {/* Google Gemini */}
+              <div
+                onClick={() => setAiConfig({ ...aiConfig, activeProvider: 'gemini' })}
+                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                  aiConfig.activeProvider === 'gemini'
+                    ? 'border-[#2563EB] bg-[#EFF6FF] shadow-xs'
+                    : 'border-[#F1ECE4] bg-white hover:border-[#BFDBFE]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl">🔵</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#BFDBFE] text-[#2563EB]">
+                    Google
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm text-[#1F2937]">Gemini 2.0 Flash</h4>
+                <p className="text-[11px] text-[#8A92A6] mt-0.5">High-speed reasoning, Google Workspace native integration.</p>
+              </div>
+
+              {/* xAI Grok */}
+              <div
+                onClick={() => setAiConfig({ ...aiConfig, activeProvider: 'grok' })}
+                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                  aiConfig.activeProvider === 'grok'
+                    ? 'border-[#1F2937] bg-[#F8FAFC] shadow-xs'
+                    : 'border-[#F1ECE4] bg-white hover:border-[#CBD5E1]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl">⚡</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#CBD5E1] text-[#1F2937]">
+                    xAI
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm text-[#1F2937]">Grok-2 Engine</h4>
+                <p className="text-[11px] text-[#8A92A6] mt-0.5">Direct, unfiltered executive analysis and fast workflow commands.</p>
+              </div>
+
+              {/* OpenAI GPT-4o */}
+              <div
+                onClick={() => setAiConfig({ ...aiConfig, activeProvider: 'openai' })}
+                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                  aiConfig.activeProvider === 'openai'
+                    ? 'border-[#10B981] bg-[#F0FDF4] shadow-xs'
+                    : 'border-[#F1ECE4] bg-white hover:border-[#A7F3D0]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl">🟢</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#A7F3D0] text-[#10B981]">
+                    OpenAI
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm text-[#1F2937]">GPT-4o Enterprise</h4>
+                <p className="text-[11px] text-[#8A92A6] mt-0.5">Multimodal assistant for document parsing & structured actions.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed API Keys Form */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-7 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs space-y-4">
+              <h3 className="font-bold text-sm text-[#1F2937] pb-2 border-b border-[#F1ECE4]">
+                API Credentials & Model IDs
+              </h3>
+
+              {/* Claude */}
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#F1EAE0] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-[#1F2937]">Anthropic Claude API</span>
+                  <span className="text-[10px] text-[#D97706] font-semibold">Recommended for Mails & Tasks</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="password"
+                    placeholder="sk-ant-api03-..."
+                    value={aiConfig.anthropicApiKey}
+                    onChange={(e) => setAiConfig({ ...aiConfig, anthropicApiKey: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs font-mono text-[#1F2937] outline-none focus:border-[#FF7A00]"
+                  />
+                  <select
+                    value={aiConfig.anthropicModel}
+                    onChange={(e) => setAiConfig({ ...aiConfig, anthropicModel: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs text-[#1F2937] outline-none"
+                  >
+                    <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet (Latest)</option>
+                    <option value="claude-3-haiku-20240307">claude-3-haiku (Fast & Light)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Gemini */}
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#F1EAE0] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-[#1F2937]">Google Gemini API</span>
+                  <span className="text-[10px] text-[#2563EB] font-semibold">Recommended for Calendar & Meet</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={aiConfig.geminiApiKey}
+                    onChange={(e) => setAiConfig({ ...aiConfig, geminiApiKey: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs font-mono text-[#1F2937] outline-none focus:border-[#FF7A00]"
+                  />
+                  <select
+                    value={aiConfig.geminiModel}
+                    onChange={(e) => setAiConfig({ ...aiConfig, geminiModel: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs text-[#1F2937] outline-none"
+                  >
+                    <option value="gemini-2.0-flash">gemini-2.0-flash (Ultra Fast)</option>
+                    <option value="gemini-1.5-pro">gemini-1.5-pro (Deep Context)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Grok */}
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#F1EAE0] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-[#1F2937]">xAI Grok API</span>
+                  <span className="text-[10px] text-[#475569] font-semibold">Fast Operational Reasoning</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="password"
+                    placeholder="xai-..."
+                    value={aiConfig.grokApiKey}
+                    onChange={(e) => setAiConfig({ ...aiConfig, grokApiKey: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs font-mono text-[#1F2937] outline-none focus:border-[#FF7A00]"
+                  />
+                  <select
+                    value={aiConfig.grokModel}
+                    onChange={(e) => setAiConfig({ ...aiConfig, grokModel: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs text-[#1F2937] outline-none"
+                  >
+                    <option value="grok-2">grok-2 (Production)</option>
+                    <option value="grok-beta">grok-beta</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* OpenAI */}
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#F1EAE0] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-[#1F2937]">OpenAI API</span>
+                  <span className="text-[10px] text-[#10B981] font-semibold">Universal Compatibility</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="password"
+                    placeholder="sk-proj-..."
+                    value={aiConfig.openaiApiKey}
+                    onChange={(e) => setAiConfig({ ...aiConfig, openaiApiKey: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs font-mono text-[#1F2937] outline-none focus:border-[#FF7A00]"
+                  />
+                  <select
+                    value={aiConfig.openaiModel}
+                    onChange={(e) => setAiConfig({ ...aiConfig, openaiModel: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-white text-xs text-[#1F2937] outline-none"
+                  >
+                    <option value="gpt-4o">gpt-4o (Omni)</option>
+                    <option value="gpt-4o-mini">gpt-4o-mini (Light)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Capabilities Toggles */}
+            <div className="lg:col-span-5 bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs space-y-4">
+              <h3 className="font-bold text-sm text-[#1F2937] pb-2 border-b border-[#F1ECE4]">
+                Automated Assistant Capabilities
+              </h3>
+
+              <div className="space-y-3">
+                <label className="flex items-start justify-between p-3.5 rounded-2xl border border-[#F1ECE4] bg-[#FAF7F2]/50 hover:bg-[#FAF7F2] transition-colors cursor-pointer">
+                  <div className="pr-3">
+                    <span className="font-bold text-xs text-[#1F2937] block">📅 AI Meeting Scheduler</span>
+                    <span className="text-[11px] text-[#8A92A6]">
+                      Automatically extract meeting intent, choose Google Meet / Teams, and schedule events.
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={aiConfig.enableMeetingScheduling}
+                    onChange={(e) => setAiConfig({ ...aiConfig, enableMeetingScheduling: e.target.checked })}
+                    className="w-4 h-4 accent-[#FF7A00] rounded mt-0.5"
+                  />
+                </label>
+
+                <label className="flex items-start justify-between p-3.5 rounded-2xl border border-[#F1ECE4] bg-[#FAF7F2]/50 hover:bg-[#FAF7F2] transition-colors cursor-pointer">
+                  <div className="pr-3">
+                    <span className="font-bold text-xs text-[#1F2937] block">✉️ Executive Mail Drafter</span>
+                    <span className="text-[11px] text-[#8A92A6]">
+                      Compose announcements, client emails, and status reports with 1-click copy and dispatch.
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={aiConfig.enableMailDrafting}
+                    onChange={(e) => setAiConfig({ ...aiConfig, enableMailDrafting: e.target.checked })}
+                    className="w-4 h-4 accent-[#FF7A00] rounded mt-0.5"
+                  />
+                </label>
+
+                <label className="flex items-start justify-between p-3.5 rounded-2xl border border-[#F1ECE4] bg-[#FAF7F2]/50 hover:bg-[#FAF7F2] transition-colors cursor-pointer">
+                  <div className="pr-3">
+                    <span className="font-bold text-xs text-[#1F2937] block">📝 Smart Task Creator</span>
+                    <span className="text-[11px] text-[#8A92A6]">
+                      Convert natural language instructions into assigned tasks with deadlines & priority.
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={aiConfig.enableTaskCreation}
+                    onChange={(e) => setAiConfig({ ...aiConfig, enableTaskCreation: e.target.checked })}
+                    className="w-4 h-4 accent-[#FF7A00] rounded mt-0.5"
+                  />
+                </label>
+
+                <label className="flex items-start justify-between p-3.5 rounded-2xl border border-[#F1ECE4] bg-[#FAF7F2]/50 hover:bg-[#FAF7F2] transition-colors cursor-pointer">
+                  <div className="pr-3">
+                    <span className="font-bold text-xs text-[#1F2937] block">⏱️ Timesheet & Work Sheet Filler</span>
+                    <span className="text-[11px] text-[#8A92A6]">
+                      Calculate shift hours, summarize tasks accomplished, and fill timesheet entries.
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={aiConfig.enableTimesheetFill}
+                    onChange={(e) => setAiConfig({ ...aiConfig, enableTimesheetFill: e.target.checked })}
+                    className="w-4 h-4 accent-[#FF7A00] rounded mt-0.5"
+                  />
+                </label>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={saveAiConfig}
+                  className="w-full py-2.5 rounded-2xl bg-[#FF7A00] hover:bg-[#E66E00] text-white text-xs font-semibold shadow-xs transition-colors"
+                >
+                  Save AI Model & Capabilities
+                </button>
               </div>
             </div>
           </div>

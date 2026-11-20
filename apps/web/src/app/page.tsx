@@ -23,6 +23,7 @@ import {
   Plus,
 } from '../components/icons';
 import { api, getStoredUser } from '../lib/api';
+import { WorkAssistantModal } from '../components/work-assistant-modal';
 
 export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -52,6 +53,8 @@ export default function HomePage() {
   const [prompt, setPrompt] = useState('');
   const [copilotReply, setCopilotReply] = useState<string | null>(null);
   const [copilotLoading, setCopilotLoading] = useState(false);
+  const [isAssistantModalOpen, setIsAssistantModalOpen] = useState(false);
+  const [modalInitialPrompt, setModalInitialPrompt] = useState('');
 
   // Keep digital clock live & current date dynamic
   useEffect(() => {
@@ -243,42 +246,20 @@ export default function HomePage() {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const handleAskCopilot = async (e: React.FormEvent) => {
+  const handleAskCopilot = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim()) return;
-
-    setCopilotLoading(true);
-    setCopilotReply(null);
-
-    try {
-      const res = await api.automations.proposeAiAction({
-        actionType: 'CREATE_TASK',
-        proposedPayload: {
-          title: prompt,
-          description: `Generated via Work Assistant: "${prompt}"`,
-          priority: 'MEDIUM',
-          projectId: projects[0]?.id || 'workspace',
-        },
-      });
-
-      if (res.success) {
-        setCopilotReply(
-          `AI Action proposed: Created task draft "${prompt}". Added to Human-in-the-Loop review panel.`
-        );
-      } else {
-        setCopilotReply(
-          `Work Assistant responded: Processed query "${prompt}". All modules synchronized.`
-        );
-      }
-    } catch {
-      setCopilotReply(
-        `Work Assistant: Analyzed query "${prompt}". Team metrics and status are optimal.`
-      );
-    } finally {
-      setCopilotLoading(false);
-      setPrompt('');
-      setTimeout(() => setCopilotReply(null), 6000);
+    if (!prompt.trim()) {
+      setIsAssistantModalOpen(true);
+      return;
     }
+    setModalInitialPrompt(prompt.trim());
+    setIsAssistantModalOpen(true);
+    setPrompt('');
+  };
+
+  const openAssistantWithPrompt = (p: string) => {
+    setModalInitialPrompt(p);
+    setIsAssistantModalOpen(true);
   };
 
   const toggleTaskStatus = async (taskId: string, currentStatus: string) => {
@@ -736,50 +717,81 @@ export default function HomePage() {
       </div>
 
       {/* 5. Bottom Card: Work Assistant ✨ (AI Copilot Bar) */}
-      <div className="bg-white rounded-3xl border border-[#F1ECE4] p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 shrink-0 w-full md:w-auto">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-[#FF8A00] to-[#FFB766] flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
-            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-sm sm:text-base text-[#1F2937]">Work Assistant</span>
-              <span className="text-[10px] sm:text-xs bg-[#FFF3E8] text-[#FF8A00] font-bold px-1.5 py-0.5 rounded-md">
-                AI
-              </span>
+      <div className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div
+            onClick={() => setIsAssistantModalOpen(true)}
+            className="flex items-center gap-3.5 shrink-0 w-full md:w-auto cursor-pointer group"
+          >
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-[#FF7A00] to-[#FFB766] flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0 group-hover:scale-105 transition-transform">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <p className="text-[11px] sm:text-xs text-[#8A92A6]">Your personal workplace copilot</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm sm:text-base text-[#1F2937] group-hover:text-[#FF7A00] transition-colors">
+                  Work Assistant
+                </span>
+                <span className="text-[10px] sm:text-xs bg-[#FFF3E8] text-[#FF8A00] font-bold px-1.5 py-0.5 rounded-md">
+                  AI
+                </span>
+                <span className="text-[10px] font-semibold text-[#8A92A6] hidden sm:inline-block">
+                  🟣 Claude • 🔵 Gemini • ⚡ Grok
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-[#8A92A6]">
+                Your personal workplace copilot • Click to open interactive command center
+              </p>
+            </div>
           </div>
+
+          {/* Interactive Form connected to live AI backend */}
+          <form onSubmit={handleAskCopilot} className="w-full md:max-w-xl flex items-center gap-2 px-4 py-2 bg-[#F7F4EF] hover:bg-[#F2EEE7] transition-colors rounded-full border border-[#EBE3D7]">
+            <input
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder='Ask anything... e.g. "Create task", "Schedule meeting", "Draft email"'
+              className="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#1F2937] placeholder-[#9CA3AF]"
+            />
+            <button
+              type="submit"
+              className="w-8 h-8 rounded-full bg-[#FF7A00] hover:bg-[#E66E00] text-white flex items-center justify-center shadow-xs transition-transform active:scale-95 shrink-0"
+              title="Send to Copilot"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </form>
         </div>
 
-        {/* Interactive Form connected to live AI backend */}
-        <form onSubmit={handleAskCopilot} className="w-full md:max-w-2xl flex items-center gap-2 px-4 py-2 bg-[#F7F4EF] hover:bg-[#F2EEE7] transition-colors rounded-full border border-[#EBE3D7]">
-          <input
-            type="text"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder='Ask anything... e.g. "Create task", "Review timesheets"'
-            className="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#1F2937] placeholder-[#9CA3AF]"
-          />
-          <button type="button" className="text-[#9CA3AF] hover:text-[#1F2937] transition-colors p-1" title="Voice Input">
-            <Mic className="w-4 h-4" />
-          </button>
-          <button
-            type="submit"
-            disabled={copilotLoading}
-            className="w-8 h-8 rounded-full bg-[#FF7A00] hover:bg-[#E66E00] text-white flex items-center justify-center shadow-xs transition-transform active:scale-95 disabled:opacity-50 shrink-0"
-          >
-            <Send className="w-3.5 h-3.5" />
-          </button>
-        </form>
+        {/* Suggestion Prompt Chips */}
+        <div className="pt-2 border-t border-[#F5F2EB] flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9CA3AF] shrink-0">
+            Suggested Prompts:
+          </span>
+          {[
+            { label: '📅 Schedule Meeting', q: 'Schedule client demo meeting tomorrow at 3 PM via Google Meet' },
+            { label: '✉️ Write Corporate Mail', q: 'Draft an email announcing upcoming Thanksgiving holiday schedule and shift bonuses' },
+            { label: '📝 Create Task', q: 'Create a high priority task: Audit production API response latency' },
+            { label: '⏱️ Fill Timesheet', q: 'Fill today\'s timesheet with 8 hours for backend refactoring and attendance sync' },
+            { label: '🔔 Meeting Reminders', q: 'Suggest preparation checklist and reminders for today\'s engineering standup' },
+          ].map((chip, idx) => (
+            <button
+              key={idx}
+              onClick={() => openAssistantWithPrompt(chip.q)}
+              className="px-3 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#F3EDE3] border border-[#EBE3D7] text-[11px] font-medium text-[#1F2937] shrink-0 transition-colors"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {copilotReply && (
-        <div className="p-4 bg-[#FFF8F2] border border-[#FDE3C7] text-[#9A3412] text-xs font-medium rounded-2xl shadow-xs animate-in fade-in flex items-center justify-between">
-          <span>✨ {copilotReply}</span>
-          <button onClick={() => setCopilotReply(null)} className="font-bold ml-4">✕</button>
-        </div>
-      )}
+      {/* Interactive Work Assistant Modal Dialog */}
+      <WorkAssistantModal
+        isOpen={isAssistantModalOpen}
+        onClose={() => setIsAssistantModalOpen(false)}
+        initialPrompt={modalInitialPrompt}
+      />
     </div>
   );
 }

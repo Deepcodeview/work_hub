@@ -14,6 +14,8 @@ import {
   BarChart3,
   Building2,
   Settings,
+  Calendar,
+  Sparkles,
   X,
 } from './icons';
 import { useNavigation } from './navigation-context';
@@ -43,9 +45,11 @@ export function Sidebar() {
     { label: 'Home', href: '/', icon: Home },
     { label: 'Attendance', href: '/attendance', icon: Clock },
     { label: 'Timesheet', href: '/timesheets', icon: FileText },
+    { label: 'Calendar', href: '/calendar', icon: Calendar, badge: 3 },
     { label: 'Projects', href: '/projects', icon: FolderKanban },
     { label: 'Tasks', href: '/tasks', icon: CheckSquare },
     { label: 'Team', href: '/team', icon: Users },
+    { label: 'Leave & Holidays', href: '/leave', icon: Sparkles },
     {
       label: 'Approvals',
       href: '/approvals',
@@ -172,6 +176,32 @@ export function Sidebar() {
               );
             })}
           </nav>
+
+          {/* Upcoming Team Timeline & Holiday Mini Card */}
+          <div className="px-3.5 mt-4 mb-3">
+            <Link
+              href="/calendar"
+              onClick={closeSidebar}
+              className="block p-3 rounded-2xl bg-[#FFFBF6] border border-[#FDE5CC] hover:border-[#FFB766] transition-all group shadow-xs"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF7A00] flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                  Live Timeline
+                </span>
+                <span className="text-[10px] font-semibold text-[#8A92A6] group-hover:text-[#FF7A00]">
+                  Calendar →
+                </span>
+              </div>
+              <p className="text-xs font-bold text-[#1F2937] truncate">
+                10:00 AM • Team Standup (Meet)
+              </p>
+              <div className="mt-1.5 pt-1.5 border-t border-[#F5E6D3] flex items-center justify-between text-[10px] text-[#8A92A6]">
+                <span>🌴 Next Holiday:</span>
+                <span className="font-semibold text-[#B45309]">Thanksgiving (Nov 26)</span>
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* User Role Card at Bottom of Sidebar */}
