@@ -4,9 +4,56 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding WorkHub database...');
+  console.log('🧹 Purging all dummy data and ensuring only clean Admin exists...');
 
-  // 1. Roles
+  // 1. Purge all operational records (tasks, projects, timesheets, attendance, leaves)
+  await prisma.taskTimeLog.deleteMany({});
+  await prisma.taskChecklist.deleteMany({});
+  await prisma.taskComment.deleteMany({});
+  await prisma.taskActivity.deleteMany({});
+  await prisma.taskAssignee.deleteMany({});
+  await prisma.taskDependency.deleteMany({});
+  await prisma.task.deleteMany({});
+
+  await prisma.projectMilestone.deleteMany({});
+  await prisma.projectMember.deleteMany({});
+  await prisma.project.deleteMany({});
+
+  await prisma.timesheetApproval.deleteMany({});
+  await prisma.timesheetEntry.deleteMany({});
+  await prisma.timesheet.deleteMany({});
+
+  await prisma.attendanceCorrection.deleteMany({});
+  await prisma.attendanceBreak.deleteMany({});
+  await prisma.attendanceSession.deleteMany({});
+
+  await prisma.leaveRequest.deleteMany({});
+  await prisma.leaveBalance.deleteMany({});
+  await prisma.employeeReportingHistory.deleteMany({});
+
+  // 2. Remove all non-admin users and non-admin employees
+  const nonAdminUsers = await prisma.user.findMany({
+    where: { email: { not: 'admin@workhub.internal' } },
+    select: { id: true },
+  });
+
+  if (nonAdminUsers.length > 0) {
+    const nonAdminIds = nonAdminUsers.map((u) => u.id);
+    await prisma.userRole.deleteMany({ where: { userId: { in: nonAdminIds } } });
+    await prisma.session.deleteMany({ where: { userId: { in: nonAdminIds } } });
+  }
+
+  await prisma.employee.deleteMany({
+    where: { email: { not: 'admin@workhub.internal' } },
+  });
+
+  await prisma.user.deleteMany({
+    where: { email: { not: 'admin@workhub.internal' } },
+  });
+
+  console.log('✅ Non-admin dummy users and records purged successfully.');
+
+  // 3. System Baseline: Roles
   const roles = [
     { name: 'SYSTEM_ADMIN', description: 'System Administrator with full access' },
     { name: 'HR_ADMIN', description: 'Human Resources Administrator' },
@@ -23,7 +70,7 @@ async function main() {
     });
   }
 
-  // 2. Permissions
+  // 4. System Baseline: Permissions
   const permissions = [
     { key: 'employee.view', description: 'View Employees' },
     { key: 'employee.manage', description: 'Manage Employees' },
@@ -42,126 +89,7 @@ async function main() {
     });
   }
 
-  // 3. Departments
-  const engDept = await prisma.department.upsert({
-    where: { code: 'ENG' },
-    update: {},
-    create: { name: 'Engineering', code: 'ENG', description: 'Software engineering & infrastructure' },
-  });
-
-  const hrDept = await prisma.department.upsert({
-    where: { code: 'HR' },
-    update: {},
-    create: { name: 'Human Resources', code: 'HR', description: 'People operations & culture' },
-  });
-
-  await prisma.department.upsert({
-    where: { code: 'PROD' },
-    update: {},
-    create: { name: 'Product & Design', code: 'PROD', description: 'Product strategy & UX/UI design' },
-  });
-
-  // 4. Designations
-  const ctoDesig = await prisma.designation.upsert({
-    where: { code: 'CTO' },
-    update: {},
-    create: { title: 'Chief Technology Officer', code: 'CTO', level: 1 },
-  });
-
-  const srEngDesig = await prisma.designation.upsert({
-    where: { code: 'SR_ENG' },
-    update: {},
-    create: { title: 'Senior Software Engineer', code: 'SR_ENG', level: 3 },
-  });
-
-  await prisma.designation.upsert({
-    where: { code: 'HR_LEAD' },
-    update: {},
-    create: { title: 'Lead People Partner', code: 'HR_LEAD', level: 2 },
-  });
-
-  // 5. System Admin User & Employee
-  const passwordHash = await bcrypt.hash('Password123!', 10);
-  const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@workhub.internal' },
-    update: {},
-    create: {
-      email: 'admin@workhub.internal',
-      passwordHash,
-      isActive: true,
-      employee: {
-        create: {
-          employeeCode: 'EMP-001',
-          firstName: 'System',
-          lastName: 'Administrator',
-          email: 'admin@workhub.internal',
-          departmentId: engDept.id,
-          designationId: ctoDesig.id,
-        },
-      },
-    },
-    include: { employee: true },
-  });
-
-  // Link Admin Role
-  const adminRole = await prisma.role.findUnique({ where: { name: 'SYSTEM_ADMIN' } });
-  if (adminRole) {
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: adminUser.id, roleId: adminRole.id } },
-      update: {},
-      create: { userId: adminUser.id, roleId: adminRole.id },
-    });
-  }
-
-  // 6. Test Staff Employee (Jane Doe - Reporting to Admin)
-  const staffUser = await prisma.user.upsert({
-    where: { email: 'jane.doe@workhub.internal' },
-    update: {},
-    create: {
-      email: 'jane.doe@workhub.internal',
-      passwordHash,
-      isActive: true,
-      employee: {
-        create: {
-          employeeCode: 'EMP-002',
-          firstName: 'Jane',
-          lastName: 'Doe',
-          email: 'jane.doe@workhub.internal',
-          departmentId: engDept.id,
-          designationId: srEngDesig.id,
-        },
-      },
-    },
-    include: { employee: true },
-  });
-
-  const empRole = await prisma.role.findUnique({ where: { name: 'EMPLOYEE' } });
-  if (empRole) {
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: staffUser.id, roleId: empRole.id } },
-      update: {},
-      create: { userId: staffUser.id, roleId: empRole.id },
-    });
-  }
-
-  // Assign reporting relationship (Jane reports to Admin)
-  if (adminUser.employee && staffUser.employee) {
-    const existingRel = await prisma.employeeReportingHistory.findFirst({
-      where: { employeeId: staffUser.employee.id, managerId: adminUser.employee.id },
-    });
-    if (!existingRel) {
-      await prisma.employeeReportingHistory.create({
-        data: {
-          employeeId: staffUser.employee.id,
-          managerId: adminUser.employee.id,
-          isPrimary: true,
-          effectiveFrom: new Date(),
-        },
-      });
-    }
-  }
-
-  // 7. Leave Types
+  // 5. System Baseline: Standard Leave Types
   await prisma.leaveType.upsert({
     where: { code: 'ANNUAL' },
     update: {},
@@ -178,7 +106,7 @@ async function main() {
     create: { name: 'Casual Leave', code: 'CASUAL', annualQuotaDays: 6, requiresApproval: false },
   });
 
-  // 8. Attendance Policy
+  // 6. System Baseline: Attendance Policy
   const policy = await prisma.attendancePolicy.findFirst({ where: { name: 'Standard 40h Policy' } });
   if (!policy) {
     await prisma.attendancePolicy.create({
@@ -191,37 +119,68 @@ async function main() {
     });
   }
 
-  // 9. Sample Project
-  if (adminUser.employee) {
-    const sampleProject = await prisma.project.upsert({
-      where: { code: 'CORE' },
-      update: {},
-      create: {
-        name: 'WorkHub Core Engineering',
-        code: 'CORE',
-        description: 'Foundational modules and enterprise platform services',
-        status: 'ACTIVE',
-        ownerId: adminUser.employee.id,
-        departmentId: engDept.id,
-      },
-    });
+  // 7. Ensure Default Clean Department & Designation for Admin
+  const adminDept = await prisma.department.upsert({
+    where: { code: 'HQ' },
+    update: {},
+    create: { name: 'Executive HQ', code: 'HQ', description: 'Executive Administration' },
+  });
 
-    await prisma.task.upsert({
-      where: { taskCode: 'CORE-101' },
-      update: {},
-      create: {
-        projectId: sampleProject.id,
-        taskCode: 'CORE-101',
-        title: 'Review System Metrics & Verify Services',
-        description: 'Verify system services across database, Redis, and workers.',
-        status: 'IN_PROGRESS',
-        priority: 'HIGH',
-        creatorId: adminUser.employee.id,
+  const adminDesig = await prisma.designation.upsert({
+    where: { code: 'ADMIN' },
+    update: {},
+    create: { title: 'System Administrator', code: 'ADMIN', level: 1 },
+  });
+
+  // 8. Sole System Admin Account
+  const passwordHash = await bcrypt.hash('Password123!', 10);
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@workhub.internal' },
+    update: { isActive: true },
+    create: {
+      email: 'admin@workhub.internal',
+      passwordHash,
+      isActive: true,
+      employee: {
+        create: {
+          employeeCode: 'EMP-001',
+          firstName: 'System',
+          lastName: 'Administrator',
+          email: 'admin@workhub.internal',
+          departmentId: adminDept.id,
+          designationId: adminDesig.id,
+        },
+      },
+    },
+    include: { employee: true },
+  });
+
+  // If admin employee was missing, create it
+  if (!adminUser.employee) {
+    await prisma.employee.create({
+      data: {
+        userId: adminUser.id,
+        employeeCode: 'EMP-001',
+        firstName: 'System',
+        lastName: 'Administrator',
+        email: 'admin@workhub.internal',
+        departmentId: adminDept.id,
+        designationId: adminDesig.id,
       },
     });
   }
 
-  console.log('WorkHub database successfully seeded!');
+  // Assign SYSTEM_ADMIN role
+  const adminRole = await prisma.role.findUnique({ where: { name: 'SYSTEM_ADMIN' } });
+  if (adminRole) {
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: adminUser.id, roleId: adminRole.id } },
+      update: {},
+      create: { userId: adminUser.id, roleId: adminRole.id },
+    });
+  }
+
+  console.log('🎉 Clean slate ready! ONLY admin@workhub.internal exists.');
 }
 
 main()

@@ -40,8 +40,8 @@ export function Header() {
 
   const displayName = user?.employee
     ? `${user.employee.firstName} ${user.employee.lastName}`
-    : 'John Carter';
-  const displayRole = user?.roles?.[0] ? user.roles[0].replace('_', ' ') : 'Software Engineer';
+    : 'System Admin';
+  const displayRole = user?.roles?.[0] ? user.roles[0].replace('_', ' ') : 'Administrator';
   const displayEmail = user?.email || 'admin@workhub.internal';
 
   return (

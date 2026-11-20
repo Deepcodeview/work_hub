@@ -30,10 +30,10 @@ export default function HomePage() {
 
   // Live Telemetry Stats
   const [stats, setStats] = useState({
-    activeProjects: 3,
-    openTasks: 5,
-    hoursThisWeek: '28h 15m',
-    timesheetStatus: '40h 00m',
+    activeProjects: 0,
+    openTasks: 0,
+    hoursThisWeek: '0h 00m',
+    timesheetStatus: '0h 00m',
   });
 
   // AI Copilot state
@@ -42,13 +42,7 @@ export default function HomePage() {
   const [copilotLoading, setCopilotLoading] = useState(false);
 
   // Interactive Checklist
-  const [todos, setTodos] = useState([
-    { id: 1, title: 'Work on HRMS Sprint 3', done: true },
-    { id: 2, title: 'Team standup', done: true },
-    { id: 3, title: 'Update project documentation', done: false },
-    { id: 4, title: 'Code review (PRs)', done: false },
-    { id: 5, title: "Plan tomorrow's sprint", done: false },
-  ]);
+  const [todos, setTodos] = useState<{ id: number; title: string; done: boolean }[]>([]);
 
   // Keep digital clock live
   useEffect(() => {

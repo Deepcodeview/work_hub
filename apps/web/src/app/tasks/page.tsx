@@ -43,89 +43,7 @@ export default function TasksPage() {
   const [newPriority, setNewPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState('120');
 
-  const defaultMockTasks: TaskItem[] = [
-    {
-      id: 'task-1',
-      taskCode: 'HRMS-101',
-      title: 'Setup project structure',
-      project: 'HRMS Platform',
-      status: 'TODO',
-      assignee: 'JC',
-      priority: 'HIGH',
-    },
-    {
-      id: 'task-2',
-      taskCode: 'CPORT-102',
-      title: 'Design new UI components',
-      project: 'Client Portal',
-      status: 'TODO',
-      assignee: 'SM',
-      priority: 'MEDIUM',
-    },
-    {
-      id: 'task-3',
-      taskCode: 'MAPP-103',
-      title: 'Write test cases',
-      project: 'Mobile App',
-      status: 'TODO',
-      assignee: 'MC',
-      priority: 'LOW',
-    },
-    {
-      id: 'task-4',
-      taskCode: 'HRMS-104',
-      title: 'Implement attendance API',
-      project: 'HRMS Platform',
-      status: 'IN_PROGRESS',
-      assignee: 'JC',
-      priority: 'HIGH',
-    },
-    {
-      id: 'task-5',
-      taskCode: 'HRMS-105',
-      title: 'Integrate timesheet module',
-      project: 'HRMS Platform',
-      status: 'IN_PROGRESS',
-      assignee: 'DK',
-      priority: 'HIGH',
-    },
-    {
-      id: 'task-6',
-      taskCode: 'MAPP-106',
-      title: 'Review PRs',
-      project: 'Mobile App',
-      status: 'IN_PROGRESS',
-      assignee: 'ED',
-      priority: 'MEDIUM',
-    },
-    {
-      id: 'task-7',
-      taskCode: 'HRMS-107',
-      title: 'Project kickoff',
-      project: 'HRMS Platform',
-      status: 'DONE',
-      assignee: 'JC',
-      priority: 'HIGH',
-    },
-    {
-      id: 'task-8',
-      taskCode: 'CPORT-108',
-      title: 'Requirement analysis',
-      project: 'Client Portal',
-      status: 'DONE',
-      assignee: 'ED',
-      priority: 'MEDIUM',
-    },
-    {
-      id: 'task-9',
-      taskCode: 'CPORT-109',
-      title: 'Wireframes',
-      project: 'Client Portal',
-      status: 'DONE',
-      assignee: 'SM',
-      priority: 'MEDIUM',
-    },
-  ];
+  const defaultMockTasks: TaskItem[] = [];
 
   const fetchTasksData = async () => {
     try {
@@ -147,7 +65,7 @@ export default function TasksPage() {
               project: p.name,
               projectId: p.id,
               status: (t.status === 'COMPLETED' ? 'DONE' : t.status) as any,
-              assignee: t.assignees?.[0]?.employee?.firstName?.[0] || 'JC',
+              assignee: t.assignees?.[0]?.employee?.firstName?.[0] || 'A',
               priority: (t.priority || 'MEDIUM') as any,
               dueDate: t.dueDate,
             }));
@@ -155,17 +73,13 @@ export default function TasksPage() {
           }
         }
 
-        if (collectedTasks.length > 0) {
-          setTasks(collectedTasks);
-        } else {
-          setTasks(defaultMockTasks);
-        }
+        setTasks(collectedTasks);
       } else {
-        setTasks(defaultMockTasks);
+        setTasks([]);
       }
     } catch (err) {
       console.error('Error fetching tasks:', err);
-      setTasks(defaultMockTasks);
+      setTasks([]);
     } finally {
       setLoading(false);
     }

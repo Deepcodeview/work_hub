@@ -34,45 +34,10 @@ export default function ProjectsPage() {
     try {
       setLoading(true);
       const res = await api.projects.list();
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.success && Array.isArray(res.data)) {
         setProjects(res.data);
       } else {
-        // Fallback default sample view matching reference
-        setProjects([
-          {
-            id: 'hrms-platform',
-            name: 'HRMS Platform',
-            code: 'HRMS',
-            description: 'Sprint 3 • 68%',
-            progress: 68,
-            color: '#8B5CF6',
-            bgLight: '#F5F3FF',
-            dueDate: 'Due Mar 31',
-            team: ['JC', 'ED', 'MC'],
-          },
-          {
-            id: 'mobile-app',
-            name: 'Mobile App',
-            code: 'MAPP',
-            description: 'v2.0 • 40%',
-            progress: 40,
-            color: '#3B82F6',
-            bgLight: '#EFF6FF',
-            dueDate: 'Due Apr 30',
-            team: ['JC', 'SM'],
-          },
-          {
-            id: 'client-portal',
-            name: 'Client Portal',
-            code: 'CPORT',
-            description: 'Design • 85%',
-            progress: 85,
-            color: '#10B981',
-            bgLight: '#F0FDF4',
-            dueDate: 'Due Feb 28',
-            team: ['JC', 'DK', 'ED'],
-          },
-        ]);
+        setProjects([]);
       }
     } catch (err) {
       console.error('Error fetching projects:', err);
@@ -186,7 +151,25 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Projects List Card Container */}
+      {/* Projects List Card Container / Empty State */}
+      {projects.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-[#F1ECE4] p-12 text-center shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-[#FFF0E0] text-[#FF8A00] flex items-center justify-center mx-auto mb-3">
+            <FolderKanban className="w-6 h-6" />
+          </div>
+          <h3 className="font-bold text-base text-[#1F2937]">No Projects Created Yet</h3>
+          <p className="text-xs text-[#8A92A6] max-w-sm mx-auto mt-1 mb-5">
+            Create your first workspace project to start planning deliverables, assigning tasks, and tracking sprint milestones.
+          </p>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Create First Project
+          </button>
+        </div>
+      ) : (
       <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs divide-y divide-[#F7F4EF]">
         {projects.map((proj, idx) => {
           const colors = [
@@ -267,6 +250,7 @@ export default function ProjectsPage() {
           );
         })}
       </div>
+      )}
 
       {/* New Project Modal */}
       {isCreateModalOpen && (

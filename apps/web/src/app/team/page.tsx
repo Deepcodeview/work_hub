@@ -23,62 +23,10 @@ export default function TeamPage() {
       try {
         setLoading(true);
         const res = await api.organization.getEmployees();
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        if (res.success && Array.isArray(res.data)) {
           setEmployees(res.data);
         } else {
-          // Default team roster matching reference
-          setEmployees([
-            {
-              id: 'emp-1',
-              firstName: 'John',
-              lastName: 'Carter',
-              workEmail: 'john.carter@workhub.internal',
-              designation: { title: 'Lead Software Engineer' },
-              department: { name: 'Engineering' },
-              status: 'ACTIVE',
-              avatarBg: '#FF981A',
-            },
-            {
-              id: 'emp-2',
-              firstName: 'Emily',
-              lastName: 'Davis',
-              workEmail: 'emily.davis@workhub.internal',
-              designation: { title: 'Product Designer' },
-              department: { name: 'Product' },
-              status: 'ACTIVE',
-              avatarBg: '#8B5CF6',
-            },
-            {
-              id: 'emp-3',
-              firstName: 'Michael',
-              lastName: 'Chen',
-              workEmail: 'michael.chen@workhub.internal',
-              designation: { title: 'Frontend Engineer' },
-              department: { name: 'Engineering' },
-              status: 'ACTIVE',
-              avatarBg: '#3B82F6',
-            },
-            {
-              id: 'emp-4',
-              firstName: 'Sophia',
-              lastName: 'Martin',
-              workEmail: 'sophia.martin@workhub.internal',
-              designation: { title: 'QA Specialist' },
-              department: { name: 'Engineering' },
-              status: 'ACTIVE',
-              avatarBg: '#10B981',
-            },
-            {
-              id: 'emp-5',
-              firstName: 'David',
-              lastName: 'Kim',
-              workEmail: 'david.kim@workhub.internal',
-              designation: { title: 'Engineering Manager' },
-              department: { name: 'Engineering' },
-              status: 'ACTIVE',
-              avatarBg: '#F59E0B',
-            },
-          ]);
+          setEmployees([]);
         }
       } catch (err) {
         console.error('Failed to load team:', err);
@@ -153,9 +101,27 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Team Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((emp) => {
+      {/* Team Cards Grid / Empty State */}
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-[#F1ECE4] p-12 text-center shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-[#FFF0E0] text-[#FF8A00] flex items-center justify-center mx-auto mb-3">
+            <Users className="w-6 h-6" />
+          </div>
+          <h3 className="font-bold text-base text-[#1F2937]">No Team Members Found</h3>
+          <p className="text-xs text-[#8A92A6] max-w-sm mx-auto mt-1 mb-5">
+            Your workspace is clean. As an Admin, you can add new employees and invite team members to your organization.
+          </p>
+          <a
+            href="/organization"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Employee in Organization
+          </a>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filtered.map((emp) => {
           const initials = `${emp.firstName?.[0] || 'T'}${emp.lastName?.[0] || 'M'}`;
           const colors = ['#FF981A', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B'];
           const avatarColor =
@@ -203,6 +169,7 @@ export default function TeamPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
