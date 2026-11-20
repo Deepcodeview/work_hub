@@ -33,6 +33,7 @@ export default function App() {
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTimestamp, setClockInTimestamp] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [completedMinutesToday, setCompletedMinutesToday] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
   useEffect(() => {
@@ -60,6 +61,14 @@ export default function App() {
   const elapsedMinutes = Math.floor((elapsedSeconds % 3600) / 60);
   const elapsedSecs = elapsedSeconds % 60;
   const pad2 = (n: number) => n.toString().padStart(2, '0');
+
+  // Total worked time today
+  const totalTodaySeconds = (completedMinutesToday * 60) + (clockedIn ? elapsedSeconds : 0);
+  const totalHours = Math.floor(totalTodaySeconds / 3600);
+  const totalMins = Math.floor((totalTodaySeconds % 3600) / 60);
+  const displayHours = clockedIn ? elapsedHours : totalHours;
+  const displayMinutes = clockedIn ? elapsedMinutes : totalMins;
+  const displaySecs = clockedIn ? elapsedSecs : 0;
 
   const handleLogin = async () => {
     setLoading(true);
@@ -91,6 +100,9 @@ export default function App() {
       });
       const data = await res.json();
       if (res.ok && data.data) {
+        if (typeof data.data.completedMinutesToday === 'number') {
+          setCompletedMinutesToday(data.data.completedMinutesToday);
+        }
         const session = data.data.currentSession || data.data.activeSession;
         const isClocked = Boolean(data.data.isClockedIn || data.data.hasOpenSession || session);
         if (isClocked && session?.clockInAt) {
@@ -152,6 +164,8 @@ export default function App() {
           body: JSON.stringify({ deviceType: 'MOBILE' }),
         });
         const recorded = `${elapsedHours}h ${elapsedMinutes}m ${elapsedSecs}s`;
+        const addedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+        setCompletedMinutesToday((prev) => prev + addedMinutes);
         Alert.alert('Clocked Out', `Shift closed! Total logged work time: ${recorded}`);
         setClockedIn(false);
         setClockInTimestamp(null);
@@ -303,21 +317,25 @@ export default function App() {
           {/* Live Work Timer Block */}
           <View style={styles.mobileTimerBox}>
             <Text style={styles.mobileTimerLabel}>
-              {clockedIn ? 'LIVE WORK TIME ELAPSED' : 'SHIFT TIMER (READY)'}
+              {clockedIn
+                ? 'LIVE WORK TIME ELAPSED'
+                : completedMinutesToday > 0
+                ? "TODAY'S TOTAL WORK COMPLETED"
+                : 'SHIFT TIMER (READY)'}
             </Text>
             <View style={styles.mobileTimerDigits}>
               <View style={styles.digitPill}>
-                <Text style={styles.digitVal}>{pad2(elapsedHours)}</Text>
+                <Text style={styles.digitVal}>{pad2(displayHours)}</Text>
                 <Text style={styles.digitSub}>HRS</Text>
               </View>
               <Text style={styles.digitColon}>:</Text>
               <View style={styles.digitPill}>
-                <Text style={styles.digitVal}>{pad2(elapsedMinutes)}</Text>
+                <Text style={styles.digitVal}>{pad2(displayMinutes)}</Text>
                 <Text style={styles.digitSub}>MIN</Text>
               </View>
               <Text style={styles.digitColon}>:</Text>
               <View style={[styles.digitPill, styles.digitPillSec]}>
-                <Text style={[styles.digitVal, styles.digitValSec]}>{pad2(elapsedSecs)}</Text>
+                <Text style={[styles.digitVal, styles.digitValSec]}>{pad2(displaySecs)}</Text>
                 <Text style={[styles.digitSub, styles.digitSubSec]}>SEC</Text>
               </View>
             </View>

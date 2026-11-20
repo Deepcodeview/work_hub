@@ -19,6 +19,8 @@ export default function AttendancePage() {
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTimestamp, setClockInTimestamp] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [completedMinutesToday, setCompletedMinutesToday] = useState(0);
+  const [totalBreakMinutesToday, setTotalBreakMinutesToday] = useState(0);
   const [onBreak, setOnBreak] = useState(false);
   const [currentTime, setCurrentTime] = useState('09:28 AM');
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,7 @@ export default function AttendancePage() {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('workhub_clock_in_time') : null;
     if (saved) {
       const ts = parseInt(saved, 10);
-      if (!isNaN(ts)) {
+      if (!isNaN(ts) && ts > 0) {
         setClockInTimestamp(ts);
         setClockedIn(true);
         setElapsedSeconds(Math.max(0, Math.floor((Date.now() - ts) / 1000)));
@@ -56,6 +58,7 @@ export default function AttendancePage() {
   useEffect(() => {
     let interval: any = null;
     if (clockedIn && clockInTimestamp && !onBreak) {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - clockInTimestamp) / 1000)));
       interval = setInterval(() => {
         setElapsedSeconds(Math.max(0, Math.floor((Date.now() - clockInTimestamp) / 1000)));
       }, 1000);
@@ -69,13 +72,33 @@ export default function AttendancePage() {
   const elapsedMinutes = Math.floor((elapsedSeconds % 3600) / 60);
   const elapsedSecs = elapsedSeconds % 60;
   const pad2 = (n: number) => n.toString().padStart(2, '0');
-  const shiftProgressPercent = Math.min(100, Math.round((elapsedSeconds / (8 * 3600)) * 100));
+
+  // Total worked time today (including finished sessions + active live session)
+  const totalTodaySeconds = (completedMinutesToday * 60) + (clockedIn ? elapsedSeconds : 0);
+  const totalTodayHours = Math.floor(totalTodaySeconds / 3600);
+  const totalTodayMinutes = Math.floor((totalTodaySeconds % 3600) / 60);
+  const totalTodaySecs = totalTodaySeconds % 60;
+
+  // Display timers for blocks
+  const displayHours = clockedIn ? elapsedHours : totalTodayHours;
+  const displayMinutes = clockedIn ? elapsedMinutes : totalTodayMinutes;
+  const displaySecs = clockedIn ? elapsedSecs : 0;
+
+  // Target: 8h = 480m = 28800s
+  const shiftProgressPercent = Math.min(100, Math.round((totalTodaySeconds / (8 * 3600)) * 100));
 
   // Load live attendance from backend
   useEffect(() => {
     async function loadAttendance() {
       const res = await api.attendance.getStatus();
       if (res.success && res.data) {
+        if (typeof res.data.completedMinutesToday === 'number') {
+          setCompletedMinutesToday(res.data.completedMinutesToday);
+        }
+        if (typeof res.data.totalBreakMinutesToday === 'number') {
+          setTotalBreakMinutesToday(res.data.totalBreakMinutesToday);
+        }
+
         const session = res.data.currentSession || res.data.activeSession;
         const isClocked = Boolean(res.data.isClockedIn || res.data.hasOpenSession || session);
 
@@ -144,8 +167,11 @@ export default function AttendancePage() {
     setLoading(true);
     const res = await api.attendance.clockOut({ latitude: 40.7128, longitude: -74.006 });
     const recorded = `${elapsedHours}h ${elapsedMinutes}m ${elapsedSecs}s`;
+    const addedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+    setCompletedMinutesToday((prev) => prev + addedMinutes);
     setClockedIn(false);
     setClockInTimestamp(null);
+    setElapsedSeconds(0);
     setOnBreak(false);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('workhub_clock_in_time');
@@ -277,7 +303,11 @@ export default function AttendancePage() {
             <div className="w-full flex flex-col items-center md:items-start p-4 rounded-2xl bg-gradient-to-b from-[#FFFDF9] to-[#FFF7EE] border border-[#FDE6D2]/80 shadow-inner">
               <div className="flex items-center justify-between w-full mb-2">
                 <span className="text-[11px] font-bold text-[#8A92A6] uppercase tracking-wider">
-                  {clockedIn ? 'Live Work Time Elapsed' : 'Shift Timer (Ready)'}
+                  {clockedIn
+                    ? 'Live Work Time Elapsed'
+                    : completedMinutesToday > 0
+                    ? "Today's Total Work Completed"
+                    : 'Shift Timer (Ready)'}
                 </span>
                 <span className="text-[11px] font-bold text-[#FF7A00]">
                   Target: 8h 00m
@@ -289,7 +319,7 @@ export default function AttendancePage() {
                 {/* Hours Block */}
                 <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
                   <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
-                    {pad2(elapsedHours)}
+                    {pad2(displayHours)}
                   </span>
                   <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
                     Hours
@@ -301,7 +331,7 @@ export default function AttendancePage() {
                 {/* Minutes Block */}
                 <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
                   <span className="text-2xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
-                    {pad2(elapsedMinutes)}
+                    {pad2(displayMinutes)}
                   </span>
                   <span className="text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
                     Minutes
@@ -313,7 +343,7 @@ export default function AttendancePage() {
                 {/* Seconds Block */}
                 <div className="flex flex-col items-center bg-[#FFF2E2] border border-[#FFD2A6] rounded-2xl px-3.5 py-2 min-w-[62px] shadow-xs">
                   <span className="text-2xl sm:text-3xl font-extrabold text-[#FF7A00] leading-none">
-                    {pad2(elapsedSecs)}
+                    {pad2(displaySecs)}
                   </span>
                   <span className="text-[9px] font-bold text-[#FF7A00] uppercase tracking-wider mt-1">
                     Seconds
@@ -425,21 +455,29 @@ export default function AttendancePage() {
             <h2 className="font-bold text-sm text-[#1F2937] mb-3">Today's Activity</h2>
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center py-1 border-b border-[#F5F2EB]">
-                <span className="text-[#8A92A6]">Active Work Session</span>
+                <span className="text-[#8A92A6]">Total Work Today</span>
                 <span className="font-bold text-[#1F2937] font-mono">
-                  {pad2(elapsedHours)}h {pad2(elapsedMinutes)}m {pad2(elapsedSecs)}s
+                  {totalTodayHours > 0 ? `${totalTodayHours}h ` : ''}{pad2(totalTodayMinutes)}m {clockedIn ? `${pad2(totalTodaySecs)}s` : ''}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-[#F5F2EB]">
-                <span className="text-[#8A92A6]">Breaks</span>
+                <span className="text-[#8A92A6]">Current Session</span>
+                <span className="font-bold text-[#1F2937] font-mono">
+                  {clockedIn
+                    ? `${pad2(elapsedHours)}h ${pad2(elapsedMinutes)}m ${pad2(elapsedSecs)}s`
+                    : 'Clocked Out'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-[#F5F2EB]">
+                <span className="text-[#8A92A6]">Breaks Today</span>
                 <span className="font-bold text-[#1F2937]">
-                  {onBreak ? '☕ On Break' : '0m'}
+                  {onBreak ? '☕ On Break' : `${totalBreakMinutesToday}m`}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1">
                 <span className="font-semibold text-[#1F2937]">Session Status</span>
                 <span className="font-bold text-[#FF7A00]">
-                  {clockedIn ? '● In Progress' : '○ Not Clocked In'}
+                  {clockedIn ? (onBreak ? '● On Break' : '● In Progress') : '○ Not Clocked In'}
                 </span>
               </div>
             </div>
@@ -464,12 +502,14 @@ export default function AttendancePage() {
                   stroke="#FF8A00"
                   strokeWidth="8"
                   strokeDasharray="251"
-                  strokeDashoffset="20"
+                  strokeDashoffset={251 - (251 * shiftProgressPercent) / 100}
                   strokeLinecap="round"
                   fill="transparent"
                 />
               </svg>
-              <span className="absolute font-bold text-sm text-[#1F2937]">92%</span>
+              <span className="absolute font-bold text-sm text-[#1F2937]">
+                {shiftProgressPercent}%
+              </span>
             </div>
           </div>
         </div>

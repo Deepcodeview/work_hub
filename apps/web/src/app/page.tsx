@@ -29,6 +29,7 @@ export default function HomePage() {
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTimestamp, setClockInTimestamp] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [completedMinutesToday, setCompletedMinutesToday] = useState(0);
   const [currentTime, setCurrentTime] = useState('');
   const [currentDateStr, setCurrentDateStr] = useState('');
   const [loading, setLoading] = useState(false);
@@ -79,7 +80,7 @@ export default function HomePage() {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('workhub_clock_in_time') : null;
     if (saved) {
       const ts = parseInt(saved, 10);
-      if (!isNaN(ts)) {
+      if (!isNaN(ts) && ts > 0) {
         setClockInTimestamp(ts);
         setClockedIn(true);
         setElapsedSeconds(Math.max(0, Math.floor((Date.now() - ts) / 1000)));
@@ -106,7 +107,17 @@ export default function HomePage() {
   const elapsedMinutes = Math.floor((elapsedSeconds % 3600) / 60);
   const elapsedSecs = elapsedSeconds % 60;
   const pad2 = (n: number) => n.toString().padStart(2, '0');
-  const shiftProgressPercent = Math.min(100, Math.round((elapsedSeconds / (8 * 3600)) * 100));
+
+  // Total worked time today
+  const totalTodaySeconds = (completedMinutesToday * 60) + (clockedIn ? elapsedSeconds : 0);
+  const totalTodayHours = Math.floor(totalTodaySeconds / 3600);
+  const totalTodayMinutes = Math.floor((totalTodaySeconds % 3600) / 60);
+
+  const displayHours = clockedIn ? elapsedHours : totalTodayHours;
+  const displayMinutes = clockedIn ? elapsedMinutes : totalTodayMinutes;
+  const displaySecs = clockedIn ? elapsedSecs : 0;
+
+  const shiftProgressPercent = Math.min(100, Math.round((totalTodaySeconds / (8 * 3600)) * 100));
 
   // Fetch initial state from real backend API
   useEffect(() => {
@@ -114,6 +125,17 @@ export default function HomePage() {
       // 1. Attendance status from database
       const attRes = await api.attendance.getStatus();
       if (attRes.success && attRes.data) {
+        if (typeof attRes.data.completedMinutesToday === 'number') {
+          setCompletedMinutesToday(attRes.data.completedMinutesToday);
+        }
+        if (typeof attRes.data.completedMinutesThisWeek === 'number') {
+          const wMin = attRes.data.completedMinutesThisWeek;
+          setStats((prev) => ({
+            ...prev,
+            hoursThisWeek: `${Math.floor(wMin / 60)}h ${pad2(wMin % 60)}m`,
+          }));
+        }
+
         const session = attRes.data.currentSession || attRes.data.activeSession;
         const isClocked = Boolean(attRes.data.isClockedIn || attRes.data.hasOpenSession || session);
 
@@ -207,8 +229,11 @@ export default function HomePage() {
         longitude: -74.006,
       });
       const recorded = `${elapsedHours}h ${elapsedMinutes}m ${elapsedSecs}s`;
+      const addedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+      setCompletedMinutesToday((prev) => prev + addedMinutes);
       setClockedIn(false);
       setClockInTimestamp(null);
+      setElapsedSeconds(0);
       if (typeof window !== 'undefined') {
         localStorage.removeItem('workhub_clock_in_time');
       }
@@ -326,7 +351,11 @@ export default function HomePage() {
             <div className="w-full flex flex-col items-center md:items-start p-3 sm:p-4 rounded-2xl bg-gradient-to-b from-[#FFFDF9] to-[#FFF7EE] border border-[#FDE6D2]/80 shadow-inner">
               <div className="flex items-center justify-between w-full mb-2">
                 <span className="text-[10px] sm:text-[11px] font-bold text-[#8A92A6] uppercase tracking-wider">
-                  {clockedIn ? 'Live Work Time Elapsed' : 'Shift Timer (Ready)'}
+                  {clockedIn
+                    ? 'Live Work Time Elapsed'
+                    : completedMinutesToday > 0
+                    ? "Today's Total Work Completed"
+                    : 'Shift Timer (Ready)'}
                 </span>
                 <span className="text-[10px] sm:text-[11px] font-bold text-[#FF7A00]">
                   Target: 8h 00m
@@ -338,7 +367,7 @@ export default function HomePage() {
                 {/* Hours Block */}
                 <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-xl sm:rounded-2xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 min-w-[50px] sm:min-w-[62px] shadow-xs">
                   <span className="text-xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
-                    {pad2(elapsedHours)}
+                    {pad2(displayHours)}
                   </span>
                   <span className="text-[8px] sm:text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
                     Hours
@@ -350,7 +379,7 @@ export default function HomePage() {
                 {/* Minutes Block */}
                 <div className="flex flex-col items-center bg-white border border-[#EBE4D8] rounded-xl sm:rounded-2xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 min-w-[50px] sm:min-w-[62px] shadow-xs">
                   <span className="text-xl sm:text-3xl font-extrabold text-[#1F2937] leading-none">
-                    {pad2(elapsedMinutes)}
+                    {pad2(displayMinutes)}
                   </span>
                   <span className="text-[8px] sm:text-[9px] font-bold text-[#8A92A6] uppercase tracking-wider mt-1">
                     Minutes
@@ -362,7 +391,7 @@ export default function HomePage() {
                 {/* Seconds Block */}
                 <div className="flex flex-col items-center bg-[#FFF2E2] border border-[#FFD2A6] rounded-xl sm:rounded-2xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 min-w-[50px] sm:min-w-[62px] shadow-xs">
                   <span className="text-xl sm:text-3xl font-extrabold text-[#FF7A00] leading-none">
-                    {pad2(elapsedSecs)}
+                    {pad2(displaySecs)}
                   </span>
                   <span className="text-[8px] sm:text-[9px] font-bold text-[#FF7A00] uppercase tracking-wider mt-1">
                     Seconds

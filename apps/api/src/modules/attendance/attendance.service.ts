@@ -212,7 +212,7 @@ export class AttendanceService {
 
     const activeBreak = activeSession?.breaks.find((b) => !b.endTime) || null;
 
-    // Calculate today's total closed minutes
+    // Calculate today's total closed minutes & breaks
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -222,9 +222,36 @@ export class AttendanceService {
         status: 'CLOSED',
         clockInAt: { gte: startOfDay },
       },
+      include: {
+        breaks: true,
+      },
     });
 
     const completedMinutesToday = closedToday.reduce(
+      (sum, s) => sum + (s.totalDurationMinutes || 0),
+      0
+    );
+
+    const totalBreakMinutesToday =
+      closedToday.reduce((sum, s) => sum + s.breaks.reduce((bSum, b) => bSum + (b.durationMinutes || 0), 0), 0) +
+      (activeSession?.breaks?.reduce((sum, b) => sum + (b.durationMinutes || 0), 0) || 0);
+
+    // Calculate this week's completed minutes (starting from Monday)
+    const startOfWeek = new Date();
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const closedThisWeek = await this.prisma.attendanceSession.findMany({
+      where: {
+        employeeId,
+        status: 'CLOSED',
+        clockInAt: { gte: startOfWeek },
+      },
+    });
+
+    const completedMinutesThisWeek = closedThisWeek.reduce(
       (sum, s) => sum + (s.totalDurationMinutes || 0),
       0
     );
@@ -238,6 +265,8 @@ export class AttendanceService {
       activeBreak,
       currentBreak: activeBreak,
       completedMinutesToday,
+      totalBreakMinutesToday,
+      completedMinutesThisWeek,
     };
   }
 
