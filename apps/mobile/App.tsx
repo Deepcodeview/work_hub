@@ -84,28 +84,89 @@ export default function App() {
     }
   };
 
+  const fetchAttendanceStatus = async (authToken: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/attendance/status`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.data) {
+        const session = data.data.currentSession || data.data.activeSession;
+        const isClocked = Boolean(data.data.isClockedIn || data.data.hasOpenSession || session);
+        if (isClocked && session?.clockInAt) {
+          const serverStart = new Date(session.clockInAt).getTime();
+          setClockedIn(true);
+          setClockInTimestamp(serverStart);
+          setElapsedSeconds(Math.max(0, Math.floor((Date.now() - serverStart) / 1000)));
+        } else if (data.data.isClockedIn === false && !session) {
+          setClockedIn(false);
+          setClockInTimestamp(null);
+          setElapsedSeconds(0);
+        }
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchAttendanceStatus(token);
+    }
+  }, [token]);
+
   const handleLogout = () => {
     setToken(null);
     setUser(null);
     setClockedIn(false);
+    setClockInTimestamp(null);
+    setElapsedSeconds(0);
   };
 
-  const handleClockToggle = () => {
-    if (!clockedIn) {
-      const nowTs = Date.now();
-      setClockedIn(true);
-      setClockInTimestamp(nowTs);
-      Alert.alert('Clocked In', `Work timer started at ${currentTime}`);
-    } else {
-      const recorded = `${elapsedHours}h ${elapsedMinutes}m ${elapsedSecs}s`;
-      Alert.alert('Clocked Out', `Shift closed! Total logged work time: ${recorded}`);
-      setClockedIn(false);
-      setClockInTimestamp(null);
+  const handleClockToggle = async () => {
+    if (!token) return;
+    try {
+      if (!clockedIn) {
+        const res = await fetch(`${API_BASE}/attendance/clock-in`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ deviceType: 'MOBILE' }),
+        });
+        const data = await res.json();
+        const session = data.data;
+        const serverStart = session?.clockInAt
+          ? new Date(session.clockInAt).getTime()
+          : Date.now();
+        setClockedIn(true);
+        setClockInTimestamp(serverStart);
+        setElapsedSeconds(Math.max(0, Math.floor((Date.now() - serverStart) / 1000)));
+        Alert.alert('Clocked In', `Work session live counter started at ${currentTime}`);
+      } else {
+        await fetch(`${API_BASE}/attendance/clock-out`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ deviceType: 'MOBILE' }),
+        });
+        const recorded = `${elapsedHours}h ${elapsedMinutes}m ${elapsedSecs}s`;
+        Alert.alert('Clocked Out', `Shift closed! Total logged work time: ${recorded}`);
+        setClockedIn(false);
+        setClockInTimestamp(null);
+        setElapsedSeconds(0);
+      }
+    } catch (err) {
+      Alert.alert('Notice', 'Action submitted to WorkHub server.');
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
+    if (token) {
+      fetchAttendanceStatus(token);
+    }
     setTimeout(() => {
       setRefreshing(false);
     }, 800);

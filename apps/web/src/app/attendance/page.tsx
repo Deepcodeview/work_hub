@@ -76,26 +76,33 @@ export default function AttendancePage() {
     async function loadAttendance() {
       const res = await api.attendance.getStatus();
       if (res.success && res.data) {
-        if (res.data.hasOpenSession) {
+        const session = res.data.currentSession || res.data.activeSession;
+        const isClocked = Boolean(res.data.isClockedIn || res.data.hasOpenSession || session);
+
+        if (isClocked && session) {
           setClockedIn(true);
-          const saved = typeof window !== 'undefined' ? localStorage.getItem('workhub_clock_in_time') : null;
-          const serverStart = res.data.activeSession?.clockInAt
-            ? new Date(res.data.activeSession.clockInAt).getTime()
+          const serverStart = session.clockInAt
+            ? new Date(session.clockInAt).getTime()
             : null;
+          const saved = typeof window !== 'undefined' ? localStorage.getItem('workhub_clock_in_time') : null;
           const ts = serverStart || (saved ? parseInt(saved, 10) : Date.now());
           setClockInTimestamp(ts);
+          setElapsedSeconds(Math.max(0, Math.floor((Date.now() - ts) / 1000)));
           if (typeof window !== 'undefined') {
             localStorage.setItem('workhub_clock_in_time', ts.toString());
           }
-        } else {
+        } else if (res.data.isClockedIn === false && !session) {
           setClockedIn(false);
           setClockInTimestamp(null);
+          setElapsedSeconds(0);
           if (typeof window !== 'undefined') {
             localStorage.removeItem('workhub_clock_in_time');
           }
         }
-        if (res.data.activeBreak) {
+        if (res.data.activeBreak || res.data.currentBreak || res.data.isOnBreak) {
           setOnBreak(true);
+        } else {
+          setOnBreak(false);
         }
       }
 
@@ -117,12 +124,16 @@ export default function AttendancePage() {
 
   const handleClockIn = async () => {
     setLoading(true);
-    const nowTs = Date.now();
     const res = await api.attendance.clockIn({ latitude: 40.7128, longitude: -74.006 });
+    const session = res.data;
+    const serverStart = session?.clockInAt
+      ? new Date(session.clockInAt).getTime()
+      : Date.now();
     setClockedIn(true);
-    setClockInTimestamp(nowTs);
+    setClockInTimestamp(serverStart);
+    setElapsedSeconds(Math.max(0, Math.floor((Date.now() - serverStart) / 1000)));
     if (typeof window !== 'undefined') {
-      localStorage.setItem('workhub_clock_in_time', nowTs.toString());
+      localStorage.setItem('workhub_clock_in_time', serverStart.toString());
     }
     setFeedback('Clock In verified. Attendance work session timer started.');
     setLoading(false);

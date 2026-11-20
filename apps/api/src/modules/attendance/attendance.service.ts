@@ -34,7 +34,7 @@ export class AttendanceService {
     });
 
     if (existingOpenSession) {
-      throw new BadRequestException('You already have an active attendance session open');
+      return existingOpenSession;
     }
 
     const now = new Date();
@@ -231,8 +231,11 @@ export class AttendanceService {
 
     return {
       isClockedIn: !!activeSession,
-      isOnBreak: !!activeBreak,
+      hasOpenSession: !!activeSession,
+      activeSession,
       currentSession: activeSession,
+      isOnBreak: !!activeBreak,
+      activeBreak,
       currentBreak: activeBreak,
       completedMinutesToday,
     };
