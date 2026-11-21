@@ -48,6 +48,10 @@ jobs:
             echo "🗄️ Running database sync..."
             cd packages/database && npx prisma generate && npx prisma db push && cd /home/ubuntu/work_hub
 
+            # Clean stale build artifacts
+            echo "🧹 Cleaning previous build artifacts..."
+            rm -rf apps/web/.next apps/api/dist
+
             # Build production Next.js and NestJS packages
             echo "🔨 Building application for production..."
             pnpm build
