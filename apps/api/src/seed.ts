@@ -26,10 +26,58 @@ async function main() {
   await prisma.attendanceCorrection.deleteMany({});
   await prisma.attendanceBreak.deleteMany({});
   await prisma.attendanceSession.deleteMany({});
+  await prisma.shiftAssignment.deleteMany({});
 
   await prisma.leaveRequest.deleteMany({});
   await prisma.leaveBalance.deleteMany({});
+
+  // Purge chat, mail, calendar, documents, payroll, and automations
+  await prisma.messageReceipt.deleteMany({});
+  await prisma.messageReaction.deleteMany({});
+  await prisma.messageAttachment.deleteMany({});
+  await prisma.message.deleteMany({});
+  await prisma.conversationMember.deleteMany({});
+  await prisma.conversation.deleteMany({});
+
+  await prisma.mailAttachment.deleteMany({});
+  await prisma.mailRecipient.deleteMany({});
+  await prisma.mailDraft.deleteMany({});
+  await prisma.mailMessage.deleteMany({});
+  await prisma.mailFolder.deleteMany({});
+  await prisma.mailProviderCredential.deleteMany({});
+  await prisma.mailAccount.deleteMany({});
+
+  await prisma.meetingActionItem.deleteMany({});
+  await prisma.meetingNote.deleteMany({});
+  await prisma.calendarAttendee.deleteMany({});
+  await prisma.calendarEvent.deleteMany({});
+  await prisma.calendar.deleteMany({});
+
+  await prisma.docVersion.deleteMany({});
+  await prisma.docPermission.deleteMany({});
+  await prisma.docFile.deleteMany({});
+  await prisma.docFolder.deleteMany({});
+
+  await prisma.payslip.deleteMany({});
+  await prisma.payrollRun.deleteMany({});
+  await prisma.employeeSalaryAssignment.deleteMany({});
+  await prisma.salaryComponent.deleteMany({});
+  await prisma.salaryStructure.deleteMany({});
+
+  await prisma.automationRun.deleteMany({});
+  await prisma.automationRule.deleteMany({});
+  await prisma.aiActionConfirmation.deleteMany({});
+  await prisma.webhook.deleteMany({});
+
+  await prisma.notification.deleteMany({});
+  await prisma.notificationPreference.deleteMany({});
+  await prisma.savedFilter.deleteMany({});
+  await prisma.auditLog.deleteMany({});
+  await prisma.invitation.deleteMany({});
+
   await prisma.employeeReportingHistory.deleteMany({});
+  await prisma.employeeProfile.deleteMany({});
+  await prisma.team.deleteMany({});
 
   // 2. Remove all non-admin users and non-admin employees
   const nonAdminUsers = await prisma.user.findMany({
@@ -51,7 +99,15 @@ async function main() {
     where: { email: { not: 'admin@workhub.internal' } },
   });
 
-  console.log('✅ Non-admin dummy users and records purged successfully.');
+  await prisma.department.deleteMany({
+    where: { code: { not: 'HQ' } },
+  });
+
+  await prisma.designation.deleteMany({
+    where: { code: { not: 'ADMIN' } },
+  });
+
+  console.log('✅ Non-admin dummy users, departments, and records purged successfully.');
 
   // 3. System Baseline: Roles
   const roles = [
