@@ -88,9 +88,9 @@ export default function TimesheetsPage() {
               const dailyHrs = Number((hrs / 5).toFixed(1)) || 1.6;
               return {
                 id: e.id || `entry-${idx}`,
-                projectId: e.projectId || (loadedProjects[0]?.id ?? 'proj-1'),
+                projectId: e.projectId || (loadedProjects[0]?.id ?? ''),
                 project: matchedProj?.name || 'Assigned Project',
-                category: e.description || 'General Development & Deliverables',
+                category: e.description || 'Deliverables & Tasks',
                 color: ['#FF7A00', '#F59E0B', '#6366F1', '#14B8A6'][idx % 4],
                 mon: dailyHrs,
                 tue: dailyHrs,
@@ -100,22 +100,8 @@ export default function TimesheetsPage() {
               };
             });
             setRows(mappedRows);
-          } else if (loadedProjects.length > 0) {
-            // Provide starter active project row so user can immediately view/edit/submit
-            setRows([
-              {
-                id: 'row-default-1',
-                projectId: loadedProjects[0].id,
-                project: loadedProjects[0].name,
-                category: 'Sprint Deliverables & Platform Development',
-                color: '#FF7A00',
-                mon: 8.0,
-                tue: 8.0,
-                wed: 8.0,
-                thu: 8.0,
-                fri: 8.0,
-              },
-            ]);
+          } else {
+            setRows([]);
           }
         }
 
@@ -251,7 +237,8 @@ export default function TimesheetsPage() {
     ]);
 
     if (dataRows.length === 0) {
-      dataRows.push(['"Internal Operations"', '"Standard Shift"', 8, 8, 8, 8, 8, '40.0']);
+      setFeedback({ type: 'error', message: 'No timesheet entries to export.' });
+      return;
     }
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...dataRows.map((e) => e.join(','))].join('\n');
@@ -270,8 +257,8 @@ export default function TimesheetsPage() {
 
     const newRow: TimesheetRow = {
       id: `row-${Date.now()}`,
-      projectId: selectedProj?.id || newEntryProject || 'proj-custom',
-      project: selectedProj?.name || 'Project Deliverables',
+      projectId: selectedProj?.id || newEntryProject || projectsList[0]?.id || '',
+      project: selectedProj?.name || 'Project Work',
       category: newEntryTask.trim() || 'Core Engineering & Tasks',
       color: ['#FF7A00', '#F59E0B', '#6366F1', '#14B8A6'][rows.length % 4],
       mon: hours,

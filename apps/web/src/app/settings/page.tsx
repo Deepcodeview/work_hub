@@ -128,42 +128,8 @@ export default function SettingsPage() {
     lastSyncedAt: 'Today at 08:30 AM',
   });
 
-  // Synced Meetings State
-  const [meetings, setMeetings] = useState<SyncedMeeting[]>([
-    {
-      id: 'meet-1',
-      title: 'Daily Engineering Standup & Code Review',
-      provider: 'google',
-      date: 'Today',
-      startTime: '10:00 AM',
-      endTime: '10:30 AM',
-      joinUrl: 'https://meet.google.com/whu-bxyz-eng',
-      attendees: ['Alex Chen', 'Maria Rivers', 'Sam Wilson'],
-      status: 'SCHEDULED',
-    },
-    {
-      id: 'meet-2',
-      title: 'Quarterly Executive All-Hands & Product Roadmap',
-      provider: 'outlook',
-      date: 'Today',
-      startTime: '02:00 PM',
-      endTime: '03:00 PM',
-      joinUrl: 'https://teams.microsoft.com/l/meetup-join/workhub-exec',
-      attendees: ['System Admin', 'Department Heads', 'Core Leads'],
-      status: 'SCHEDULED',
-    },
-    {
-      id: 'meet-3',
-      title: 'Sprint Retrospective & Sprint 24 Planning',
-      provider: 'google',
-      date: 'Tomorrow',
-      startTime: '11:00 AM',
-      endTime: '12:00 PM',
-      joinUrl: 'https://meet.google.com/whu-sprint-plan',
-      attendees: ['Engineering Team', 'Product Owners'],
-      status: 'SCHEDULED',
-    },
-  ]);
+  // Synced Meetings State (clean initial state, populated via integrations or manual schedule)
+  const [meetings, setMeetings] = useState<SyncedMeeting[]>([]);
 
   // Office & Geofence Policy State
   const [policy, setPolicy] = useState<OfficePolicy>({
@@ -1135,69 +1101,79 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {meetings.map((m) => {
-              const isGoogle = m.provider === 'google';
-              return (
-                <div
-                  key={m.id}
-                  className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs flex flex-col justify-between hover:border-[#FFD7B0] transition-colors"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold border flex items-center gap-1.5 ${
-                          isGoogle
-                            ? 'bg-[#EA4335]/10 text-[#EA4335] border-[#EA4335]/20'
-                            : 'bg-[#0078D4]/10 text-[#0078D4] border-[#0078D4]/20'
-                        }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                        {isGoogle ? 'Google Meet' : 'Microsoft Teams'}
-                      </span>
-                      <span className="text-xs font-semibold text-[#8A92A6]">{m.date}</span>
-                    </div>
+          {meetings.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-[#F1ECE4] p-12 text-center shadow-xs">
+              <Calendar className="w-8 h-8 text-[#D1D5DB] mx-auto mb-2" />
+              <p className="font-semibold text-sm text-[#1F2937] mb-1">No Connected Calendar Meetings</p>
+              <p className="text-xs text-[#8A92A6]">
+                Sync your Google Calendar or Microsoft Outlook in the tabs above to view company meetings here.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {meetings.map((m) => {
+                const isGoogle = m.provider === 'google';
+                return (
+                  <div
+                    key={m.id}
+                    className="bg-white rounded-3xl border border-[#F1ECE4] p-5 shadow-xs flex flex-col justify-between hover:border-[#FFD7B0] transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border flex items-center gap-1.5 ${
+                            isGoogle
+                              ? 'bg-[#EA4335]/10 text-[#EA4335] border-[#EA4335]/20'
+                              : 'bg-[#0078D4]/10 text-[#0078D4] border-[#0078D4]/20'
+                          }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          {isGoogle ? 'Google Meet' : 'Microsoft Teams'}
+                        </span>
+                        <span className="text-xs font-semibold text-[#8A92A6]">{m.date}</span>
+                      </div>
 
-                    <h3 className="font-bold text-sm text-[#1F2937] leading-snug mb-2">{m.title}</h3>
+                      <h3 className="font-bold text-sm text-[#1F2937] leading-snug mb-2">{m.title}</h3>
 
-                    <div className="flex items-center gap-2 text-xs text-[#64748B] mb-3">
-                      <Clock className="w-3.5 h-3.5 text-[#9CA3AF]" />
-                      <span>
-                        {m.startTime} - {m.endTime}
-                      </span>
-                    </div>
+                      <div className="flex items-center gap-2 text-xs text-[#64748B] mb-3">
+                        <Clock className="w-3.5 h-3.5 text-[#9CA3AF]" />
+                        <span>
+                          {m.startTime} - {m.endTime}
+                        </span>
+                      </div>
 
-                    <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#F1EAE0] mb-4">
-                      <span className="text-[11px] text-[#8A92A6] block mb-1">Participants:</span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {m.attendees.map((a, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 rounded-md bg-white border border-[#E2DDD5] text-[10px] font-semibold text-[#1F2937]"
-                          >
-                            {a}
-                          </span>
-                        ))}
+                      <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#F1EAE0] mb-4">
+                        <span className="text-[11px] text-[#8A92A6] block mb-1">Participants:</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {m.attendees.map((a, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-0.5 rounded-md bg-white border border-[#E2DDD5] text-[10px] font-semibold text-[#1F2937]"
+                            >
+                              {a}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <a
-                    href={m.joinUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-full py-2.5 rounded-2xl text-xs font-bold text-center block shadow-xs transition-transform active:scale-98 ${
-                      isGoogle
-                        ? 'bg-[#EA4335] hover:bg-[#D93025] text-white'
-                        : 'bg-[#0078D4] hover:bg-[#006cbd] text-white'
-                    }`}
-                  >
-                    Join {isGoogle ? 'Google Meet' : 'Microsoft Teams'} ➔
-                  </a>
-                </div>
-              );
-            })}
-          </div>
+                    <a
+                      href={m.joinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-full py-2.5 rounded-2xl text-xs font-bold text-center block shadow-xs transition-transform active:scale-98 ${
+                        isGoogle
+                          ? 'bg-[#EA4335] hover:bg-[#D93025] text-white'
+                          : 'bg-[#0078D4] hover:bg-[#006cbd] text-white'
+                      }`}
+                    >
+                      Join {isGoogle ? 'Google Meet' : 'Microsoft Teams'} ➔
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

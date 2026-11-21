@@ -12,6 +12,7 @@ import {
   Building2,
   Sparkles,
 } from '../../components/icons';
+import { api } from '../../lib/api';
 
 interface TimelineEvent {
   id: string;
@@ -42,76 +43,18 @@ export default function CalendarTimelinePage() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'meetings' | 'holidays' | 'shifts'>('all');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Scheduled Timeline Events
-  const [events, setEvents] = useState<TimelineEvent[]>([
-    {
-      id: 'evt-1',
-      title: 'Daily Engineering Standup & Code Review',
-      type: 'meeting',
-      provider: 'google',
-      date: 'Today',
-      timeSlot: '10:00 AM - 10:30 AM',
-      startTime: '10:00 AM',
-      endTime: '10:30 AM',
-      joinUrl: 'https://meet.google.com/whu-bxyz-eng',
-      attendees: ['Alex Chen', 'Maria Rivers', 'Sam Wilson'],
-      description: 'Sprint 24 blockers review and backend API synchronization.',
-      status: 'SCHEDULED',
-    },
-    {
-      id: 'evt-2',
-      title: 'Frontend & UI Accessibility Sync',
-      type: 'meeting',
-      provider: 'teams',
-      date: 'Today',
-      timeSlot: '11:30 AM - 12:15 PM',
-      startTime: '11:30 AM',
-      endTime: '12:15 PM',
-      joinUrl: 'https://teams.microsoft.com/l/meetup-join/workhub-accessibility',
-      attendees: ['Design Team', 'Frontend Engineers'],
-      description: 'Review responsive layout fixes, sidebar timeline, and mobile APK.',
-      status: 'SCHEDULED',
-    },
-    {
-      id: 'evt-3',
-      title: 'Executive All-Hands & Product Roadmap',
-      type: 'meeting',
-      provider: 'teams',
-      date: 'Today',
-      timeSlot: '02:00 PM - 03:00 PM',
-      startTime: '02:00 PM',
-      endTime: '03:00 PM',
-      joinUrl: 'https://teams.microsoft.com/l/meetup-join/workhub-allhands',
-      attendees: ['All Employees', 'Executives'],
-      description: 'Monthly company-wide operational townhall.',
-      status: 'SCHEDULED',
-    },
-    {
-      id: 'evt-4',
-      title: 'Core Shift: Backend Engineering & DevOps',
-      type: 'shift',
-      provider: 'office',
-      date: 'Today',
-      timeSlot: '09:00 AM - 05:00 PM',
-      startTime: '09:00 AM',
-      endTime: '05:00 PM',
-      location: 'Office HQ, New York (Zone A)',
-      attendees: ['System Admin', 'David Kim', 'Engineering Team'],
-      status: 'IN_PROGRESS',
-    },
-    {
-      id: 'evt-5',
-      title: 'Maria Rivers — Approved Medical Leave',
-      type: 'leave',
-      date: 'Today',
-      timeSlot: 'All Day',
-      startTime: '09:00 AM',
-      endTime: '05:00 PM',
-      attendees: ['Maria Rivers'],
-      description: 'Approved by HR Admin • Resumes tomorrow.',
-      status: 'SCHEDULED',
-    },
-  ]);
+  // Scheduled Timeline Events (initialized clean from workspace / user entry)
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Load real team members from organization database
+    api.organization.getEmployees().then((res) => {
+      if (res.success && Array.isArray(res.data)) {
+        setTeamMembers(res.data);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Official Company Holidays
   const holidays: CompanyHoliday[] = [
@@ -426,29 +369,25 @@ export default function CalendarTimelinePage() {
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-[#FAF7F2]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                  <span className="font-semibold text-[#1F2937]">Alex Chen</span>
+              {teamMembers.length === 0 ? (
+                <div className="py-4 text-center text-[#8A92A6] text-xs">
+                  Active team roster will populate as members check in.
                 </div>
-                <span className="text-[10px] text-[#64748B]">In Office (09:00 - 17:00)</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-[#FAF7F2]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                  <span className="font-semibold text-[#1F2937]">David Kim</span>
-                </div>
-                <span className="text-[10px] text-[#64748B]">Clocked In • Engineering</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-[#FAF7F2]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#D97706]" />
-                  <span className="font-semibold text-[#1F2937]">Maria Rivers</span>
-                </div>
-                <span className="text-[10px] text-[#D97706] font-semibold">Medical Leave</span>
-              </div>
+              ) : (
+                teamMembers.slice(0, 6).map((m) => (
+                  <div key={m.id} className="flex items-center justify-between p-2 rounded-xl bg-[#FAF7F2]">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+                      <span className="font-semibold text-[#1F2937]">
+                        {m.firstName} {m.lastName}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#64748B]">
+                      {m.department?.name || 'On Duty'}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -135,28 +135,14 @@ export default function TasksPage() {
           fetchTasksData();
           return;
         }
-      } catch (err) {
-        console.error('API create task failed, adding locally:', err);
+        setFeedback({ type: 'error', message: res.error || 'Failed to create task on server.' });
+      } catch (err: any) {
+        setFeedback({ type: 'error', message: err.message || 'Task creation failed.' });
       }
+    } else {
+      setFeedback({ type: 'error', message: 'Please create or select an active project before adding tasks.' });
     }
-
-    // Local fallback
-    const localNewTask: TaskItem = {
-      id: `task-${Date.now()}`,
-      taskCode: generatedCode.toUpperCase(),
-      title: newTitle,
-      project: projectsList.find((p) => p.id === targetProjectId)?.name || 'HRMS Platform',
-      status: 'TODO',
-      assignee: 'JC',
-      priority: newPriority,
-    };
-
-    setTasks((prev) => [localNewTask, ...prev]);
-    setIsModalOpen(false);
-    setNewTitle('');
-    setNewTaskCode('');
-    setFeedback({ type: 'success', message: 'Task added to board!' });
-    setTimeout(() => setFeedback(null), 3000);
+    setTimeout(() => setFeedback(null), 3500);
   };
 
   const filteredTasks =

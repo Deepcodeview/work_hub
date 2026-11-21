@@ -371,7 +371,9 @@ export default function OrganizationPage() {
                     const initials = `${emp.firstName?.[0] || 'E'}${emp.lastName?.[0] || 'P'}`;
                     const managerName = emp.manager
                       ? `${emp.manager.firstName} ${emp.manager.lastName}`
-                      : 'Maria Rivers';
+                      : emp.primaryManager
+                      ? `${emp.primaryManager.firstName} ${emp.primaryManager.lastName}`
+                      : 'None';
 
                     return (
                       <tr key={emp.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
