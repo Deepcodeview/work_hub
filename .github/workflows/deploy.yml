@@ -31,9 +31,11 @@ jobs:
             # Navigate to project directory
             cd /home/ubuntu/work_hub || exit 1
 
-            # Pull latest changes from main branch
+            # Pull latest changes from main branch (with stale ref cleanup guard)
             echo "📥 Pulling latest changes from GitHub..."
-            git fetch origin main
+            rm -f .git/refs/remotes/origin/main
+            git update-ref -d refs/remotes/origin/main 2>/dev/null || true
+            git fetch --prune origin main
             git reset --hard origin/main
 
             # Install dependencies
