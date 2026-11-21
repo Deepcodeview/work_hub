@@ -62,3 +62,61 @@ body {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
+
+/* OLED Dark Theme Styling */
+html.dark {
+  --background: #0B0F17;
+  --foreground: #F8FAFC;
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0B0F17 !important;
+  color: #F8FAFC !important;
+}
+
+html.dark header,
+html.dark aside,
+html.dark nav,
+html.dark .bg-white {
+  background-color: #111827 !important;
+  border-color: #1F2937 !important;
+  color: #F8FAFC !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #1F2937 !important;
+  color: #F8FAFC !important;
+  border-color: #374151 !important;
+}
+
+html.dark .text-\[\#1F2937\] {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-\[\#64748B\],
+html.dark .text-\[\#8A92A6\],
+html.dark .text-\[\#94A3B8\] {
+  color: #94A3B8 !important;
+}
+
+html.dark .bg-\[\#FAF7F2\],
+html.dark .bg-\[\#F6F3EE\],
+html.dark .bg-\[\#F5F2EB\],
+html.dark .bg-\[\#FBF9F5\],
+html.dark .bg-\[\#F8F5F0\] {
+  background-color: #172033 !important;
+}
+
+html.dark .border-\[\#F1ECE4\],
+html.dark .border-\[\#EBE4D8\],
+html.dark .border-\[\#E2DDD5\] {
+  border-color: #1F2937 !important;
+}
+
+html.dark * {
+  scrollbar-color: #374151 transparent;
+}
+

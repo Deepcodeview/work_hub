@@ -25,6 +25,7 @@ import {
   Plus,
   X,
   ArrowRight,
+  Download,
 } from './icons';
 import { api } from '../lib/api';
 
@@ -287,6 +288,15 @@ export function CommandPalette({ isOpen, onClose, onOpenWorkAssistant }: Command
       icon: Settings,
       shortcut: 'G S',
       run: () => navigateTo('/settings'),
+    },
+    {
+      id: 'nav-download',
+      category: 'Navigation',
+      title: 'Mobile Companion (APK & PWA)',
+      subtitle: 'Download Android APK and install on home screen',
+      icon: Download,
+      shortcut: 'APK',
+      run: () => navigateTo('/download'),
     },
   ];
 

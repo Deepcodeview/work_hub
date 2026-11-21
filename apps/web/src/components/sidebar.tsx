@@ -21,6 +21,7 @@ import {
   CreditCard,
   Network,
   X,
+  Download,
 } from './icons';
 import { useNavigation } from './navigation-context';
 import { getStoredUser } from '../lib/api';
@@ -76,6 +77,13 @@ export function Sidebar() {
         },
         { label: 'Mail Sync', href: '/mail', icon: Mail },
         { label: 'Documents', href: '/documents', icon: FileText },
+        {
+          label: 'Mobile App',
+          href: '/download',
+          icon: Download,
+          badge: 'APK',
+          badgeColor: 'bg-emerald-500 text-white',
+        },
       ],
     },
     {

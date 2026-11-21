@@ -5,6 +5,7 @@ import { AppShell } from '../components/app-shell';
 export const metadata: Metadata = {
   title: 'WorkHub — Workforce Operating System',
   description: 'Enterprise workforce operations, attendance, timesheets, and project management',
+  manifest: '/manifest.json',
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',

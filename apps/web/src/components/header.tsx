@@ -22,6 +22,8 @@ import {
   Calendar,
   X,
   Sparkles,
+  Sun,
+  Moon,
 } from './icons';
 import { useNavigation } from './navigation-context';
 import { api, getStoredUser, clearStoredSession } from '../lib/api';
@@ -36,6 +38,32 @@ export function Header() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [appsOpen, setAppsOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // OLED Dark Theme state
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('workhub_theme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      setIsDark(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDark(false);
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('workhub_theme', 'light');
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('workhub_theme', 'dark');
+      setIsDark(true);
+    }
+  };
 
   // User state
   const [user, setUser] = useState<any>(null);
@@ -206,7 +234,21 @@ export function Header() {
           )}
         </button>
 
-        {/* 2. Apps Launcher / Grid Button */}
+        {/* 2. Theme Toggle Button (Light / OLED Dark) */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] transition-colors"
+          title={isDark ? 'Switch to Light Theme' : 'Switch to OLED Dark Theme'}
+          aria-label="Toggle display theme"
+        >
+          {isDark ? (
+            <Sun className="w-5 h-5 text-[#F59E0B]" />
+          ) : (
+            <Moon className="w-5 h-5 text-[#64748B]" />
+          )}
+        </button>
+
+        {/* 3. Apps Launcher / Grid Button */}
         <button
           onClick={() => {
             setAppsOpen(!appsOpen);
@@ -224,7 +266,7 @@ export function Header() {
           <LayoutGrid className="w-5 h-5" />
         </button>
 
-        {/* 3. User Profile Pill */}
+        {/* 4. User Profile Pill */}
         <div
           onClick={() => {
             setProfileOpen(!profileOpen);
@@ -412,6 +454,18 @@ export function Header() {
                   Sign In
                 </span>
               </Link>
+              <button
+                onClick={toggleTheme}
+                className="w-full px-3 py-2 text-xs font-semibold text-[#1F2937] hover:bg-[#FAF7F2] rounded-xl flex items-center justify-between transition-colors text-left"
+              >
+                <div className="flex items-center gap-2">
+                  {isDark ? <Sun className="w-3.5 h-3.5 text-[#F59E0B]" /> : <Moon className="w-3.5 h-3.5 text-[#64748B]" />}
+                  <span>Appearance</span>
+                </div>
+                <span className="text-[10px] text-[#FF7A00] font-bold">
+                  {isDark ? 'OLED Dark' : 'Light Theme'}
+                </span>
+              </button>
             </div>
 
             <div className="pt-2 mt-2 border-t border-[#F1ECE4]">

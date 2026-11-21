@@ -223,11 +223,10 @@ export default function TimesheetsPage() {
       {/* Toast Feedback */}
       {feedback && (
         <div
-          className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top duration-200 ${
-            feedback.type === 'success'
-              ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#16A34A]'
-              : 'bg-[#FEF2F2] border-[#FECACA] text-[#DC2626]'
-          }`}
+          className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top duration-200 ${feedback.type === 'success'
+            ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#16A34A]'
+            : 'bg-[#FEF2F2] border-[#FECACA] text-[#DC2626]'
+            }`}
         >
           <div className="flex items-center gap-2">
             {feedback.type === 'success' ? (
@@ -250,21 +249,19 @@ export default function TimesheetsPage() {
           <div className="flex items-center p-1 bg-[#F5F2EB] rounded-full border border-[#EBE4D8]">
             <button
               onClick={() => setActiveTab('my')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                activeTab === 'my'
-                  ? 'bg-white text-[#FF7A00] shadow-xs'
-                  : 'text-[#64748B] hover:text-[#1F2937]'
-              }`}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'my'
+                ? 'bg-white text-[#FF7A00] shadow-xs'
+                : 'text-[#64748B] hover:text-[#1F2937]'
+                }`}
             >
               My Timesheet
             </button>
             <button
               onClick={() => setActiveTab('team')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                activeTab === 'team'
-                  ? 'bg-white text-[#FF7A00] shadow-xs'
-                  : 'text-[#64748B] hover:text-[#1F2937]'
-              }`}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'team'
+                ? 'bg-white text-[#FF7A00] shadow-xs'
+                : 'text-[#64748B] hover:text-[#1F2937]'
+                }`}
             >
               Team Timesheet {teamSubmissions.length > 0 && `(${teamSubmissions.length})`}
             </button>
@@ -306,11 +303,10 @@ export default function TimesheetsPage() {
                 <option>Monthly View</option>
               </select>
               <span
-                className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
-                  submitted
-                    ? 'text-[#16A34A] bg-[#F0FDF4] border-[#DCFCE7]'
-                    : 'text-[#D97706] bg-[#FFFBEB] border-[#FEF3C7]'
-                }`}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${submitted
+                  ? 'text-[#16A34A] bg-[#F0FDF4] border-[#DCFCE7]'
+                  : 'text-[#D97706] bg-[#FFFBEB] border-[#FEF3C7]'
+                  }`}
               >
                 Status: {submitted ? 'Submitted' : 'Draft'}
               </span>
@@ -343,87 +339,87 @@ export default function TimesheetsPage() {
                     </tr>
                   ) : (
                     rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
-                      <td className="py-4">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <div
-                            className="w-3 h-3 rounded-full shrink-0"
-                            style={{ backgroundColor: row.color }}
-                          ></div>
-                          <div>
-                            <span className="font-semibold text-sm text-[#1F2937] block">
-                              {row.project}
-                            </span>
-                            <span className="text-xs text-[#8A92A6] block">{row.category}</span>
+                      <tr key={row.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
+                        <td className="py-4">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: row.color }}
+                            ></div>
+                            <div>
+                              <span className="font-semibold text-sm text-[#1F2937] block">
+                                {row.project}
+                              </span>
+                              <span className="text-xs text-[#8A92A6] block">{row.category}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-4 text-center">
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="24"
-                          disabled={submitted}
-                          value={row.mon}
-                          onChange={(e) => handleCellChange(row.id, 'mon', e.target.value)}
-                          className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
-                        />
-                      </td>
-                      <td className="py-4 text-center">
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="24"
-                          disabled={submitted}
-                          value={row.tue}
-                          onChange={(e) => handleCellChange(row.id, 'tue', e.target.value)}
-                          className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
-                        />
-                      </td>
-                      <td className="py-4 text-center">
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="24"
-                          disabled={submitted}
-                          value={row.wed}
-                          onChange={(e) => handleCellChange(row.id, 'wed', e.target.value)}
-                          className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
-                        />
-                      </td>
-                      <td className="py-4 text-center">
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="24"
-                          disabled={submitted}
-                          value={row.thu}
-                          onChange={(e) => handleCellChange(row.id, 'thu', e.target.value)}
-                          className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
-                        />
-                      </td>
-                      <td className="py-4 text-center">
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="24"
-                          disabled={submitted}
-                          value={row.fri}
-                          onChange={(e) => handleCellChange(row.id, 'fri', e.target.value)}
-                          className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
-                        />
-                      </td>
-                      <td className="py-4 text-right pr-4 font-bold text-[#1F2937]">
-                        {calcRowTotal(row).toFixed(1)}
-                      </td>
-                    </tr>
-                  ))
-                )}
+                        </td>
+                        <td className="py-4 text-center">
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="24"
+                            disabled={submitted}
+                            value={row.mon}
+                            onChange={(e) => handleCellChange(row.id, 'mon', e.target.value)}
+                            className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
+                          />
+                        </td>
+                        <td className="py-4 text-center">
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="24"
+                            disabled={submitted}
+                            value={row.tue}
+                            onChange={(e) => handleCellChange(row.id, 'tue', e.target.value)}
+                            className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
+                          />
+                        </td>
+                        <td className="py-4 text-center">
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="24"
+                            disabled={submitted}
+                            value={row.wed}
+                            onChange={(e) => handleCellChange(row.id, 'wed', e.target.value)}
+                            className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
+                          />
+                        </td>
+                        <td className="py-4 text-center">
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="24"
+                            disabled={submitted}
+                            value={row.thu}
+                            onChange={(e) => handleCellChange(row.id, 'thu', e.target.value)}
+                            className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
+                          />
+                        </td>
+                        <td className="py-4 text-center">
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="24"
+                            disabled={submitted}
+                            value={row.fri}
+                            onChange={(e) => handleCellChange(row.id, 'fri', e.target.value)}
+                            className="w-14 text-center font-medium text-[#334155] bg-transparent hover:bg-white focus:bg-white rounded-lg border border-transparent hover:border-[#E2DDD5] focus:border-[#FF8A00] outline-none py-1 transition-all"
+                          />
+                        </td>
+                        <td className="py-4 text-right pr-4 font-bold text-[#1F2937]">
+                          {calcRowTotal(row).toFixed(1)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
 
                   {/* Total Hours Row */}
                   <tr className="border-t-2 border-[#F1ECE4] bg-[#FAF7F2]/40 font-bold">
@@ -461,11 +457,10 @@ export default function TimesheetsPage() {
               <button
                 onClick={handleSubmitTimesheet}
                 disabled={submitted}
-                className={`px-6 py-2.5 rounded-full text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 active:scale-98 ${
-                  submitted
-                    ? 'bg-[#16A34A] cursor-default'
-                    : 'bg-[#FF8A00] hover:bg-[#E67C00]'
-                }`}
+                className={`px-6 py-2.5 rounded-full text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 active:scale-98 ${submitted
+                  ? 'bg-[#16A34A] cursor-default'
+                  : 'bg-[#FF8A00] hover:bg-[#E67C00]'
+                  }`}
               >
                 {submitted ? (
                   <>
