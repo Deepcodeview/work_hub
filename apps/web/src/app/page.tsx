@@ -21,6 +21,11 @@ import {
   AlertCircle,
   Users,
   Plus,
+  CreditCard,
+  UserPlus,
+  Building2,
+  Settings,
+  ShieldCheck,
 } from '../components/icons';
 import { api, getStoredUser } from '../lib/api';
 import { WorkAssistantModal } from '../components/work-assistant-modal';
@@ -274,6 +279,7 @@ export default function HomePage() {
     ? `${currentUser.employee.firstName} ${currentUser.employee.lastName}`
     : 'Admin';
 
+  const userRoles: string[] = currentUser?.roles?.length ? currentUser.roles : ['SYSTEM_ADMIN'];
   const completedCount = tasks.filter((t) => t.status === 'COMPLETED' || t.status === 'DONE').length;
 
   return (
@@ -297,6 +303,130 @@ export default function HomePage() {
           </p>
         </div>
       </div>
+
+      {/* Role-Based Quick Hub Strip */}
+      {userRoles.includes('SYSTEM_ADMIN') && (
+        <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50/50 dark:from-[#FF7A00]/10 dark:via-gray-800 dark:to-[#FF7A00]/5 border border-[#FFE2C8] dark:border-gray-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-xl bg-[#FF7A00] text-white text-xs font-bold">
+              👑
+            </span>
+            <div>
+              <span className="text-xs font-black text-[#1F2937] dark:text-white block">
+                Super Admin Command Center
+              </span>
+              <span className="text-[11px] text-[#8A92A6] dark:text-gray-400">
+                Full privileges active • Enterprise management tools
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/onboarding"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs transition-all"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-[#FF7A00]" />
+              <span>Onboarding Hub</span>
+            </Link>
+            <Link
+              href="/payroll"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs transition-all"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-[#16A34A]" />
+              <span>Payroll Runs</span>
+            </Link>
+            <Link
+              href="/organization"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs transition-all"
+            >
+              <Building2 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Organization</span>
+            </Link>
+            <Link
+              href="/settings"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs transition-all"
+            >
+              <Settings className="w-3.5 h-3.5 text-gray-500" />
+              <span>Settings & Audit</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {userRoles.includes('HR_ADMIN') && !userRoles.includes('SYSTEM_ADMIN') && (
+        <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50/50 dark:from-purple-950/20 dark:via-gray-800 dark:to-purple-950/10 border border-purple-200 dark:border-purple-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-xl bg-purple-600 text-white text-xs font-bold">
+              HR
+            </span>
+            <div>
+              <span className="text-xs font-black text-[#1F2937] dark:text-white block">
+                HR Administrator Hub
+              </span>
+              <span className="text-[11px] text-[#8A92A6] dark:text-gray-400">
+                Employee onboarding, leaves & monthly payroll operations
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/onboarding"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-purple-600" />
+              <span>Onboard Employee</span>
+            </Link>
+            <Link
+              href="/payroll"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Run Payroll</span>
+            </Link>
+            <Link
+              href="/approvals"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
+              <span>Approvals Queue</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {(userRoles.includes('REPORTING_MANAGER') || userRoles.includes('DEPARTMENT_HEAD') || userRoles.includes('PROJECT_MANAGER')) && !userRoles.includes('SYSTEM_ADMIN') && !userRoles.includes('HR_ADMIN') && (
+        <div className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50/50 dark:from-blue-950/20 dark:via-gray-800 dark:to-blue-950/10 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold">
+              MGR
+            </span>
+            <div>
+              <span className="text-xs font-black text-[#1F2937] dark:text-white block">
+                Management & Approvals Console
+              </span>
+              <span className="text-[11px] text-[#8A92A6] dark:text-gray-400">
+                Team reporting, timesheets & leave approval workflows
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/approvals"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Review Approvals</span>
+            </Link>
+            <Link
+              href="/team"
+              className="px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 hover:bg-[#FAF7F2] dark:hover:bg-gray-700 text-[11px] font-bold text-[#1F2937] dark:text-white border border-[#E2E8F0] dark:border-gray-700 flex items-center gap-1.5 shadow-2xs"
+            >
+              <Users className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Team Directory</span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* 2. Top Hero Section: Punch Clock + Today's Plan */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

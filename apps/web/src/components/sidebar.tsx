@@ -96,7 +96,7 @@ export function Sidebar() {
           icon: CheckCircle2,
           badge: 3,
           badgeColor: 'bg-[#FF8A00] text-white',
-          roles: ['SYSTEM_ADMIN', 'HR_ADMIN', 'DEPARTMENT_HEAD', 'REPORTING_MANAGER'],
+          roles: ['SYSTEM_ADMIN', 'HR_ADMIN', 'DEPARTMENT_HEAD', 'REPORTING_MANAGER', 'PROJECT_MANAGER'],
         },
         {
           label: 'Onboarding',
@@ -104,6 +104,7 @@ export function Sidebar() {
           icon: UserPlus,
           badge: 'HR',
           badgeColor: 'bg-indigo-600 text-white',
+          roles: ['SYSTEM_ADMIN', 'HR_ADMIN'],
         },
         {
           label: 'Leaves',
@@ -114,7 +115,7 @@ export function Sidebar() {
           label: 'Payroll',
           href: '/payroll',
           icon: CreditCard,
-          roles: ['SYSTEM_ADMIN', 'HR_ADMIN'],
+          roles: ['SYSTEM_ADMIN', 'HR_ADMIN', 'FINANCE'],
         },
         {
           label: 'Automations',
