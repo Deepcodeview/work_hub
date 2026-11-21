@@ -199,17 +199,31 @@ export class HrmsService {
     });
   }
 
-  async getPendingApprovals(managerEmployeeId: string): Promise<any[]> {
+  async getPendingApprovals(managerEmployeeId: string, isSuperAdmin: boolean = false): Promise<any[]> {
     return this.prisma.leaveRequest.findMany({
-      where: {
-        approverManagerId: managerEmployeeId,
-        status: 'PENDING',
-      },
+      where: isSuperAdmin
+        ? { status: 'PENDING' }
+        : {
+            status: 'PENDING',
+            OR: [
+              { approverManagerId: managerEmployeeId },
+              { approverManagerId: null },
+            ],
+          },
       include: {
-        employee: { select: { id: true, firstName: true, lastName: true, employeeCode: true } },
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeCode: true,
+            department: { select: { name: true } },
+            designation: { select: { title: true } },
+          },
+        },
         leaveType: true,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

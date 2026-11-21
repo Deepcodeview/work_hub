@@ -29,7 +29,9 @@ export class HrmsController {
 
   @Get('leaves/pending-approvals')
   async getPendingLeaves(@Req() req: any) {
-    return this.hrmsService.getPendingApprovals(req.user.employeeId);
+    const isSuperAdmin =
+      req.user?.roles?.includes('SYSTEM_ADMIN') || req.user?.roles?.includes('HR_ADMIN');
+    return this.hrmsService.getPendingApprovals(req.user.employeeId, isSuperAdmin);
   }
 
   @Patch('leaves/:id/approve')

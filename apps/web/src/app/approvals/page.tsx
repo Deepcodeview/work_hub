@@ -48,28 +48,45 @@ export default function ApprovalsPage() {
 
       if (tsRes.success && Array.isArray(tsRes.data)) {
         tsRes.data.forEach((ts: any) => {
+          const emp = ts.employee;
+          const fullName = emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Team Member' : 'Team Member';
+          const roleTitle = emp?.designation?.title || emp?.department?.name || 'Timesheet Entry';
+          const workDateFormatted = ts.workDate
+            ? new Date(ts.workDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+            : ts.createdAt
+            ? new Date(ts.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'Submitted';
+          const hours = ts.totalMinutes ? (ts.totalMinutes / 60).toFixed(1) : '0';
+          const initials = emp ? `${emp.firstName?.[0] || 'T'}${emp.lastName?.[0] || 'M'}` : 'TS';
           items.push({
             id: ts.id,
             type: 'TIMESHEET',
-            name: `${ts.employee?.firstName || 'Team'} ${ts.employee?.lastName || 'Member'}`,
-            role: ts.employee?.designation?.name || 'Engineer',
-            date: ts.periodStartDate ? new Date(ts.periodStartDate).toLocaleDateString() : 'This Week',
-            hoursOrDays: `${ts.totalMinutes ? (ts.totalMinutes / 60).toFixed(1) : 0}h`,
-            avatar: `${ts.employee?.firstName?.[0] || 'T'}${ts.employee?.lastName?.[0] || 'M'}`,
+            name: fullName,
+            role: roleTitle,
+            date: workDateFormatted,
+            hoursOrDays: `${hours}h`,
+            avatar: initials,
           });
         });
       }
 
       if (lvRes.success && Array.isArray(lvRes.data)) {
         lvRes.data.forEach((lv: any) => {
+          const emp = lv.employee;
+          const fullName = emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Team Member' : 'Team Member';
+          const roleTitle = lv.leaveType?.name || emp?.designation?.title || emp?.department?.name || 'Leave Request';
+          const dateRange = lv.startDate && lv.endDate
+            ? `${new Date(lv.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${new Date(lv.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+            : 'Leave Request';
+          const initials = emp ? `${emp.firstName?.[0] || 'L'}${emp.lastName?.[0] || 'R'}` : 'LV';
           items.push({
             id: lv.id,
             type: 'LEAVE',
-            name: `${lv.employee?.firstName || 'Employee'} ${lv.employee?.lastName || ''}`,
-            role: lv.leaveType?.name || 'Leave Request',
-            date: `${new Date(lv.startDate).toLocaleDateString()} - ${new Date(lv.endDate).toLocaleDateString()}`,
+            name: fullName,
+            role: roleTitle,
+            date: dateRange,
             hoursOrDays: `${lv.daysCount || 1}d`,
-            avatar: `${lv.employee?.firstName?.[0] || 'L'}${lv.employee?.lastName?.[0] || 'R'}`,
+            avatar: initials,
           });
         });
       }
@@ -117,11 +134,17 @@ export default function ApprovalsPage() {
   };
 
   const filteredApprovals = approvals.filter((item) => {
-    if (activeTab === 'all') return true;
     if (activeTab === 'timesheet') return item.type === 'TIMESHEET';
     if (activeTab === 'leave') return item.type === 'LEAVE';
     return true;
   });
+
+  const pendingTimesheetHours = approvals
+    .filter((i) => i.type === 'TIMESHEET')
+    .reduce((sum, item) => sum + (parseFloat(item.hoursOrDays) || 0), 0);
+  const pendingLeaveDays = approvals
+    .filter((i) => i.type === 'LEAVE')
+    .reduce((sum, item) => sum + (parseFloat(item.hoursOrDays) || 0), 0);
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -188,8 +211,12 @@ export default function ApprovalsPage() {
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">0h</span>
-            <span className="text-xs font-medium text-[#8A92A6]">Total Overdue Hours</span>
+            <span className="text-2xl font-bold text-[#1F2937] block tracking-tight">
+              {pendingTimesheetHours > 0 ? `${pendingTimesheetHours.toFixed(1)}h` : `${pendingLeaveDays}d`}
+            </span>
+            <span className="text-xs font-medium text-[#8A92A6]">
+              {pendingTimesheetHours > 0 ? 'Total Pending Hours' : 'Total Pending Leave'}
+            </span>
           </div>
         </div>
       </div>
