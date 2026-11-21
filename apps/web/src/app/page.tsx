@@ -292,17 +292,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 1. Greeting Title Banner */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1F2937] tracking-tight">
-            Welcome back, {displayName} 👋
-          </h1>
-          <p className="text-xs sm:text-sm text-[#8A92A6] mt-0.5">
-            {currentDateStr || 'Today'} • <span className="text-[#64748B]">Focus on your goals today.</span>
-          </p>
-        </div>
-      </div>
+
 
       {/* Role-Based Quick Hub Strip */}
       {userRoles.includes('SYSTEM_ADMIN') && (
@@ -434,8 +424,8 @@ export default function HomePage() {
         <div className="lg:col-span-8 bg-white rounded-3xl border border-[#F1ECE4] p-4 sm:p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
           {/* Left: Punch In/Out Controls & Dial */}
           <div className="flex flex-col items-center md:items-start space-y-4 shrink-0 w-full">
-            {/* Status indicator */}
-            <div className="flex items-center justify-between w-full gap-3">
+            {/* Status indicator & Date */}
+            <div className="flex flex-wrap items-center justify-between w-full gap-2">
               <div
                 className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${
                   clockedIn
@@ -451,11 +441,16 @@ export default function HomePage() {
                 <span>{clockedIn ? '● Active Work Session' : '○ Not Clocked In'}</span>
               </div>
 
-              {clockInTimestamp && (
-                <span className="text-[11px] font-semibold text-[#8A92A6]">
-                  In: {new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <div className="flex items-center gap-2 text-[11px] font-semibold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#EBE4D8] text-[#1F2937]">
+                  📅 {currentDateStr || 'Today'}
                 </span>
-              )}
+                {clockInTimestamp && (
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
+                    In: {new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Live Work Stopwatch Card */}
