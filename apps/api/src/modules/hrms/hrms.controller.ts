@@ -56,4 +56,45 @@ export class HrmsController {
   async getMyPayslips(@Req() req: any) {
     return this.hrmsService.getPayslips(req.user.employeeId);
   }
+
+  @Get('payroll/all-payslips')
+  async getAllPayslips(@Query('runId') runId?: string) {
+    return this.hrmsService.getAllPayslips(runId);
+  }
+
+  @Get('payroll/assignments')
+  async getSalaryAssignments() {
+    return this.hrmsService.getSalaryAssignments();
+  }
+
+  @Post('payroll/assignments')
+  async assignSalary(
+    @Body()
+    dto: {
+      employeeId: string;
+      baseSalary: number;
+      paymentMethod?: string;
+      structureId?: string;
+    }
+  ) {
+    return this.hrmsService.assignSalary(dto);
+  }
+
+  @Get('payroll/salary-structures')
+  async getSalaryStructures() {
+    return this.hrmsService.getSalaryStructures();
+  }
+
+  @Post('payroll/salary-structures')
+  async createSalaryStructure(
+    @Body()
+    dto: {
+      name: string;
+      code: string;
+      currency?: string;
+      components?: { name: string; type: string; amount: number; isStatutory?: boolean }[];
+    }
+  ) {
+    return this.hrmsService.createSalaryStructure(dto);
+  }
 }

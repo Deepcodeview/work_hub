@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Users,
   Building2,
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
+  UserPlus,
 } from '../../components/icons';
 import { api } from '../../lib/api';
 
@@ -281,6 +283,13 @@ export default function OrganizationPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/onboarding"
+            className="px-4 py-2 rounded-full bg-[#FAF7F2] dark:bg-gray-800 hover:bg-[#F0ECE1] dark:hover:bg-gray-700 text-[#475569] dark:text-gray-200 text-xs font-semibold border border-[#E2E8F0] dark:border-gray-700 shadow-xs flex items-center gap-1.5 transition-all"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-[#FF7A00]" />
+            <span>Onboarding Hub</span>
+          </Link>
           {activeTab === 'departments' ? (
             <button
               onClick={openCreateDeptModal}

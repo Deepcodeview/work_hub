@@ -22,6 +22,7 @@ import {
   Network,
   X,
   Download,
+  UserPlus,
 } from './icons';
 import { useNavigation } from './navigation-context';
 import { getStoredUser } from '../lib/api';
@@ -96,6 +97,13 @@ export function Sidebar() {
           badge: 3,
           badgeColor: 'bg-[#FF8A00] text-white',
           roles: ['SYSTEM_ADMIN', 'HR_ADMIN', 'DEPARTMENT_HEAD', 'REPORTING_MANAGER'],
+        },
+        {
+          label: 'Onboarding',
+          href: '/onboarding',
+          icon: UserPlus,
+          badge: 'HR',
+          badgeColor: 'bg-indigo-600 text-white',
         },
         {
           label: 'Leaves',

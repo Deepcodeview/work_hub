@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
@@ -128,7 +129,7 @@ export class EmployeesService {
 
   async create(
     data: {
-      employeeCode: string;
+      employeeCode?: string;
       firstName: string;
       lastName: string;
       email: string;
@@ -137,14 +138,21 @@ export class EmployeesService {
       teamId?: string;
       designationId?: string;
       managerId?: string;
+      password?: string;
+      role?: string;
+      baseSalary?: number;
+      paymentMethod?: string;
     },
     actorId?: string
   ): Promise<any> {
+    const emailLower = data.email.toLowerCase().trim();
+    const code = data.employeeCode?.trim() || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+
     const existing = await this.prisma.employee.findFirst({
       where: {
         OR: [
-          { email: data.email.toLowerCase() },
-          { employeeCode: data.employeeCode },
+          { email: emailLower },
+          { employeeCode: code },
         ],
       },
     });
@@ -153,16 +161,53 @@ export class EmployeesService {
       throw new ConflictException('Employee with this email or code already exists');
     }
 
+    // Provision User account if password provided or user account requested
+    let userId: string | null = null;
+    let user = await this.prisma.user.findUnique({
+      where: { email: emailLower },
+    });
+
+    if (!user && data.password) {
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(data.password, salt);
+      user = await this.prisma.user.create({
+        data: {
+          email: emailLower,
+          passwordHash,
+          isActive: true,
+        },
+      });
+
+      const roleName = data.role || 'EMPLOYEE';
+      const roleRecord = await this.prisma.role.findUnique({
+        where: { name: roleName },
+      });
+      if (roleRecord) {
+        await this.prisma.userRole.create({
+          data: {
+            userId: user.id,
+            roleId: roleRecord.id,
+          },
+        });
+      }
+    }
+
+    if (user) {
+      userId = user.id;
+    }
+
     const employee = await this.prisma.employee.create({
       data: {
-        employeeCode: data.employeeCode,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email.toLowerCase(),
-        phone: data.phone,
-        departmentId: data.departmentId,
-        teamId: data.teamId,
-        designationId: data.designationId,
+        userId,
+        employeeCode: code,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        email: emailLower,
+        phone: data.phone?.trim() || null,
+        departmentId: data.departmentId || null,
+        teamId: data.teamId || null,
+        designationId: data.designationId || null,
+        status: 'ACTIVE',
         ...(data.managerId && {
           reportingHistoryAsEmployee: {
             create: {
@@ -173,14 +218,78 @@ export class EmployeesService {
           },
         }),
       },
+      include: {
+        department: true,
+        designation: true,
+      },
     });
+
+    // Automatically set up Compensation / Salary Assignment if specified
+    if (data.baseSalary && data.baseSalary > 0) {
+      let structure = await this.prisma.salaryStructure.findFirst();
+      if (!structure) {
+        structure = await this.prisma.salaryStructure.create({
+          data: {
+            name: 'Standard Corporate Package',
+            code: 'STD_CORP',
+            currency: 'USD',
+            components: {
+              create: [
+                { name: 'Base Pay', type: 'EARNING', amount: 0.85 },
+                { name: 'Standard Allowance', type: 'EARNING', amount: 0.15 },
+                { name: 'Statutory Withholding', type: 'DEDUCTION', amount: 0.15, isStatutory: true },
+              ],
+            },
+          },
+        });
+      }
+
+      await this.prisma.employeeSalaryAssignment.upsert({
+        where: { employeeId: employee.id },
+        update: {
+          baseSalary: Number(data.baseSalary),
+          paymentMethod: data.paymentMethod || 'DIRECT_DEPOSIT',
+          structureId: structure.id,
+        },
+        create: {
+          employeeId: employee.id,
+          structureId: structure.id,
+          baseSalary: Number(data.baseSalary),
+          paymentMethod: data.paymentMethod || 'DIRECT_DEPOSIT',
+        },
+      });
+    }
+
+    // Automatically provision initial annual leave balances for all available leave types
+    const leaveTypes = await this.prisma.leaveType.findMany();
+    const currentYear = new Date().getFullYear();
+    for (const lt of leaveTypes) {
+      await this.prisma.leaveBalance.upsert({
+        where: {
+          employeeId_leaveTypeId_year: {
+            employeeId: employee.id,
+            leaveTypeId: lt.id,
+            year: currentYear,
+          },
+        },
+        update: {},
+        create: {
+          employeeId: employee.id,
+          leaveTypeId: lt.id,
+          year: currentYear,
+          totalAccruedDays: lt.annualQuotaDays || 12,
+          usedDays: 0,
+          pendingDays: 0,
+        },
+      });
+    }
 
     await this.audit.log({
       actorId,
-      action: 'employee.created',
+      action: 'employee.onboarded',
       entity: 'employee',
       entityId: employee.id,
-      details: { email: employee.email, code: employee.employeeCode },
+      details: { email: employee.email, code: employee.employeeCode, hasUserAccount: !!userId },
     });
 
     return employee;

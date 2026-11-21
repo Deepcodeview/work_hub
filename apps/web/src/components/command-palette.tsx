@@ -26,6 +26,7 @@ import {
   X,
   ArrowRight,
   Download,
+  UserPlus,
 } from './icons';
 import { api } from '../lib/api';
 
@@ -124,6 +125,22 @@ export function CommandPalette({ isOpen, onClose, onOpenWorkAssistant }: Command
       subtitle: 'Allocate daily project hours and submit for manager approval',
       icon: FileText,
       run: () => navigateTo('/timesheets'),
+    },
+    {
+      id: 'act-onboard-employee',
+      category: 'Quick Actions',
+      title: 'Onboard New Employee',
+      subtitle: 'Launch interactive 5-step new hire onboarding wizard',
+      icon: UserPlus,
+      run: () => navigateTo('/onboarding?new=true'),
+    },
+    {
+      id: 'act-run-payroll',
+      category: 'Quick Actions',
+      title: 'Execute Payroll Run',
+      subtitle: 'Process monthly payslip batches and statutory deductions',
+      icon: CreditCard,
+      run: () => navigateTo('/payroll?run=true'),
     },
 
     // AI & Tools
@@ -255,6 +272,14 @@ export function CommandPalette({ isOpen, onClose, onOpenWorkAssistant }: Command
       subtitle: 'Monthly payslips, salary structures, and tax deductions',
       icon: CreditCard,
       run: () => navigateTo('/payroll'),
+    },
+    {
+      id: 'nav-onboarding',
+      category: 'Navigation',
+      title: 'Employee Onboarding & Pipeline',
+      subtitle: 'Manage new hire stages, credentials, and verification',
+      icon: UserPlus,
+      run: () => navigateTo('/onboarding'),
     },
     {
       id: 'nav-automations',

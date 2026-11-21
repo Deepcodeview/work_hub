@@ -320,6 +320,20 @@ export const api = {
         body: JSON.stringify(dto),
       }),
     getMyPayslips: () => apiFetch('/hrms/payroll/payslips'),
+    getAllPayslips: (runId?: string) =>
+      apiFetch(`/hrms/payroll/all-payslips${runId ? `?runId=${runId}` : ''}`),
+    getSalaryAssignments: () => apiFetch('/hrms/payroll/assignments'),
+    assignSalary: (data: { employeeId: string; baseSalary: number; paymentMethod?: string; structureId?: string }) =>
+      apiFetch('/hrms/payroll/assignments', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getSalaryStructures: () => apiFetch('/hrms/payroll/salary-structures'),
+    createSalaryStructure: (data: { name: string; code: string; currency?: string; components?: any[] }) =>
+      apiFetch('/hrms/payroll/salary-structures', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   // Automations & AI Actions
