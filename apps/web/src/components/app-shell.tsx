@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <NavigationProvider>
       <Sidebar />
       <Header />
-      <main className="pl-0 lg:pl-64 pt-16 pb-24 lg:pb-8 min-h-screen transition-all duration-300">
+      <main className="pl-0 lg:pl-64 pt-16 pb-24 lg:pb-8 min-h-screen w-full touch-pan-y transition-all duration-300">
         <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
           {children}
         </div>

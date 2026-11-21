@@ -31,11 +31,14 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     if (typeof window === 'undefined') return;
     if (isSidebarOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
     } else {
       document.body.style.overflow = '';
+      document.body.style.touchAction = '';
     }
     return () => {
       document.body.style.overflow = '';
+      document.body.style.touchAction = '';
     };
   }, [isSidebarOpen]);
 

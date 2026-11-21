@@ -24,8 +24,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#FF7A00',
 };
 
@@ -36,7 +36,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#FBF9F5] text-[#1F2937] font-sans antialiased selection:bg-[#FFE2C8] selection:text-[#FF7A00] overscroll-none">
+      <body className="min-h-screen bg-[#FBF9F5] text-[#1F2937] font-sans antialiased selection:bg-[#FFE2C8] selection:text-[#FF7A00] touch-pan-y">
         <AppShell>{children}</AppShell>
       </body>
     </html>

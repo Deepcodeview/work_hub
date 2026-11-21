@@ -283,7 +283,7 @@ export default function HomePage() {
   const completedCount = tasks.filter((t) => t.status === 'COMPLETED' || t.status === 'DONE').length;
 
   return (
-    <div className="space-y-6 max-w-full overflow-x-hidden">
+    <div className="space-y-6 max-w-full touch-pan-y">
       {/* Notification Toast */}
       {notification && (
         <div className="p-3 bg-[#EBFBF3] border border-[#DCFCE7] text-[#10B981] text-xs font-semibold rounded-2xl flex items-center justify-between shadow-xs transition-all animate-in fade-in">

@@ -16,6 +16,7 @@ import {
 export default function DownloadPage() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstall = (e: any) => {
@@ -32,6 +33,17 @@ export default function DownloadPage() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
   }, []);
 
+  const handleDownloadApk = () => {
+    setDownloading(true);
+    const link = document.createElement('a');
+    link.href = '/api/download';
+    link.download = 'workhub-v1.0.0.apk';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => setDownloading(false), 4000);
+  };
+
   const handleInstallPWA = async () => {
     if (!installPrompt) {
       alert('To install WorkHub on iOS Safari: tap Share (⎋) > Add to Home Screen.\nOn Chrome/Edge: tap Menu (⋮) > Install App.');
@@ -46,7 +58,18 @@ export default function DownloadPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 max-w-5xl mx-auto pb-12 touch-pan-y">
+      {/* Download Alert Toast */}
+      {downloading && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-between shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Download className="w-4 h-4 text-emerald-600 animate-bounce" />
+            <span>🚀 Direct APK download started! Check your phone's notification bar or Downloads folder.</span>
+          </div>
+          <button onClick={() => setDownloading(false)} className="font-bold p-1">✕</button>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="rounded-3xl bg-gradient-to-r from-[#FF981A] via-[#FF7A00] to-[#E66E00] p-6 sm:p-10 text-white relative overflow-hidden shadow-lg shadow-orange-500/20">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
@@ -63,15 +86,13 @@ export default function DownloadPage() {
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
-            <a
-              href="https://github.com/Deepcodeview/work_hub/releases"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={handleDownloadApk}
               className="px-6 py-3 rounded-full bg-white text-[#FF7A00] font-bold text-xs sm:text-sm hover:bg-[#FFF8F0] shadow-md transition-all flex items-center gap-2 active:scale-98"
             >
               <Download className="w-4 h-4 text-[#FF7A00]" />
-              <span>Download Android APK</span>
-            </a>
+              <span>{downloading ? 'Downloading APK...' : 'Download Android APK'}</span>
+            </button>
 
             <button
               onClick={handleInstallPWA}
@@ -87,20 +108,20 @@ export default function DownloadPage() {
       {/* Main Download Options Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Option 1: Android APK */}
-        <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 sm:p-8 shadow-xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#111827] rounded-3xl border border-[#F1ECE4] dark:border-gray-800 p-6 sm:p-8 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl mb-4 border border-emerald-100">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 border border-emerald-100 dark:border-emerald-800">
               🤖
             </div>
-            <h3 className="font-bold text-lg text-[#1F2937] mb-1">Android Standalone APK</h3>
-            <p className="text-xs text-[#8A92A6] mb-5">
+            <h3 className="font-bold text-lg text-[#1F2937] dark:text-white mb-1">Android Standalone APK</h3>
+            <p className="text-xs text-[#8A92A6] dark:text-gray-400 mb-5">
               Direct installer package for all Android phones and tablets (Samsung, Google Pixel, OnePlus, Xiaomi).
             </p>
 
-            <div className="space-y-2.5 text-xs text-[#64748B] mb-6">
+            <div className="space-y-2.5 text-xs text-[#64748B] dark:text-gray-300 mb-6">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Package: <code className="font-mono text-[#1F2937]">com.workhub.mobile</code></span>
+                <span>Package: <code className="font-mono text-[#1F2937] dark:text-gray-200">com.workhub.mobile</code></span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -112,21 +133,19 @@ export default function DownloadPage() {
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Size: ~24 MB (Optimized React Native / Expo)</span>
+                <span>Direct Delivery: Instant browser download without store redirects</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[#F1ECE4]">
-            <a
-              href="https://github.com/Deepcodeview/work_hub/releases"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3 rounded-full bg-[#1F2937] hover:bg-[#111827] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-xs"
+          <div className="pt-4 border-t border-[#F1ECE4] dark:border-gray-800">
+            <button
+              onClick={handleDownloadApk}
+              className="w-full py-3 rounded-full bg-[#1F2937] hover:bg-[#111827] dark:bg-[#FF7A00] dark:hover:bg-[#E66E00] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-xs"
             >
               <Download className="w-4 h-4" />
-              <span>Download Direct APK (v1.0.0)</span>
-            </a>
+              <span>{downloading ? 'Downloading APK...' : 'Download Direct APK (v1.0.0)'}</span>
+            </button>
           </div>
         </div>
 
