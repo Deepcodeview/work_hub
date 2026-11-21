@@ -38,15 +38,17 @@ export default function MailPage() {
       const token = localStorage.getItem('workhub_token') || localStorage.getItem('token') || '';
       const accRes = await fetch('/api/v1/mail/account', {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      if (accRes.ok) {
-        const acc = await accRes.json();
+      }).catch(() => null);
+      if (accRes && accRes.ok) {
+        const rawAcc = await accRes.json();
+        const acc = rawAcc.data || rawAcc;
         setAccount(acc);
         const foldRes = await fetch(`/api/v1/mail/accounts/${acc.id}/folders`, {
           headers: { Authorization: `Bearer ${token}` },
-        });
-        if (foldRes.ok) {
-          const fData = await foldRes.json();
+        }).catch(() => null);
+        if (foldRes && foldRes.ok) {
+          const rawF = await foldRes.json();
+          const fData = Array.isArray(rawF) ? rawF : rawF.data || [];
           setFolders(fData);
           const inbox = fData.find((f: any) => f.name === 'INBOX') || fData[0];
           setActiveFolder(inbox);
@@ -66,9 +68,10 @@ export default function MailPage() {
       const res = await fetch(
         `/api/v1/mail/accounts/${account.id}/folders/${folderId}/messages`,
         { headers: { Authorization: `Bearer ${token}` } },
-      );
-      if (res.ok) {
-        setMessages(await res.json());
+      ).catch(() => null);
+      if (res && res.ok) {
+        const rawM = await res.json();
+        setMessages(Array.isArray(rawM) ? rawM : rawM.data || []);
       }
     } catch {
       // offline fallback
@@ -180,9 +183,8 @@ export default function MailPage() {
               <button
                 key={f.id}
                 onClick={() => setActiveFolder(f)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${
-                  activeFolder?.id === f.id ? 'bg-[#FFF3E8] text-[#FF8A00]' : 'text-[#1F2937] hover:bg-[#F1F5F9]'
-                }`}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${activeFolder?.id === f.id ? 'bg-[#FFF3E8] text-[#FF8A00]' : 'text-[#1F2937] hover:bg-[#F1F5F9]'
+                  }`}
               >
                 <span>{f.name}</span>
                 {f.unreadCount > 0 && (
@@ -240,9 +242,8 @@ export default function MailPage() {
                     <div
                       key={m.id}
                       onClick={() => setSelectedMessage(m)}
-                      className={`p-4 cursor-pointer hover:bg-[#F8FAFC] transition-colors flex items-center justify-between gap-4 ${
-                        !m.isRead ? 'bg-[#FFFDF9]' : ''
-                      }`}
+                      className={`p-4 cursor-pointer hover:bg-[#F8FAFC] transition-colors flex items-center justify-between gap-4 ${!m.isRead ? 'bg-[#FFFDF9]' : ''
+                        }`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">

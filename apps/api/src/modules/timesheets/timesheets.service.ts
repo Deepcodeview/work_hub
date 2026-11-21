@@ -102,23 +102,42 @@ export class TimesheetsService {
       where: { timesheetId: timesheet.id },
     });
 
-    const totalMinutes = entries.reduce((sum, e) => sum + Math.max(0, e.durationMinutes), 0);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    const createdEntries = await Promise.all(
-      entries.map((entry) =>
-        this.prisma.timesheetEntry.create({
-          data: {
-            timesheetId: timesheet!.id,
-            projectId: entry.projectId,
-            taskId: entry.taskId,
-            description: entry.description,
-            durationMinutes: entry.durationMinutes,
-            startTime: entry.startTime ? new Date(entry.startTime) : undefined,
-            endTime: entry.endTime ? new Date(entry.endTime) : undefined,
-          },
-        })
-      )
-    );
+    const validEntries = (entries || []).map((entry) => {
+      const desc =
+        entry.description ||
+        (entry as any).taskSummary ||
+        (entry as any).title ||
+        'Core Work Activity';
+      const duration = Math.max(0, Number(entry.durationMinutes) || 0);
+      const validProjectId =
+        entry.projectId && uuidRegex.test(entry.projectId) ? entry.projectId : undefined;
+      const validTaskId =
+        entry.taskId && uuidRegex.test(entry.taskId) ? entry.taskId : undefined;
+
+      return {
+        timesheetId: timesheet!.id,
+        projectId: validProjectId,
+        taskId: validTaskId,
+        description: desc,
+        durationMinutes: duration,
+        startTime: entry.startTime ? new Date(entry.startTime) : undefined,
+        endTime: entry.endTime ? new Date(entry.endTime) : undefined,
+      };
+    });
+
+    const totalMinutes = validEntries.reduce((sum, e) => sum + e.durationMinutes, 0);
+
+    if (validEntries.length > 0) {
+      await Promise.all(
+        validEntries.map((e) =>
+          this.prisma.timesheetEntry.create({
+            data: e,
+          })
+        )
+      );
+    }
 
     const updatedTimesheet = await this.prisma.timesheet.update({
       where: { id: timesheet.id },
@@ -151,7 +170,9 @@ export class TimesheetsService {
     }
 
     if (timesheet.entries.length === 0) {
-      throw new BadRequestException('Cannot submit a timesheet with no entries');
+      throw new BadRequestException(
+        'Cannot submit a timesheet with no entries. Please add at least one project activity with logged hours.'
+      );
     }
 
     // Capture current primary reporting manager to lock approval routing
@@ -164,15 +185,31 @@ export class TimesheetsService {
       select: { managerId: true },
     });
 
+    // Fallback to any active manager or HR admin if employee has no reporting history yet
+    let approverManagerId = activeReporting?.managerId || null;
+    if (!approverManagerId) {
+      const adminEmp = await this.prisma.employee.findFirst({
+        where: {
+          id: { not: employeeId },
+          status: 'ACTIVE',
+        },
+        select: { id: true },
+      });
+      if (adminEmp) {
+        approverManagerId = adminEmp.id;
+      }
+    }
+
     const now = new Date();
     const updated = await this.prisma.timesheet.update({
       where: { id: timesheetId },
       data: {
         status: 'SUBMITTED',
         submittedAt: now,
-        approverManagerId: activeReporting?.managerId || null,
+        approverManagerId,
         rejectionReason: null,
       },
+      include: { entries: true },
     });
 
     // Record immutable audit record for submission
@@ -325,14 +362,19 @@ export class TimesheetsService {
   }
 
   /**
-   * List pending timesheet approvals assigned to manager
+   * List pending timesheet approvals assigned to manager (or all if SuperAdmin/HR)
    */
-  async getPendingApprovals(managerEmployeeId: string): Promise<any[]> {
+  async getPendingApprovals(managerEmployeeId: string, isSuperAdmin: boolean = false): Promise<any[]> {
     return this.prisma.timesheet.findMany({
-      where: {
-        approverManagerId: managerEmployeeId,
-        status: 'SUBMITTED',
-      },
+      where: isSuperAdmin
+        ? { status: 'SUBMITTED' }
+        : {
+            status: 'SUBMITTED',
+            OR: [
+              { approverManagerId: managerEmployeeId },
+              { approverManagerId: null },
+            ],
+          },
       include: {
         employee: {
           select: {

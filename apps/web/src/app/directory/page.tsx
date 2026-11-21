@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button } from '@workhub/ui';
+import { api } from '../../lib/api';
 
 interface EmployeeItem {
   id: string;
@@ -27,23 +28,14 @@ export default function DirectoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('workhub_token') : null;
-      const url = `/api/v1/employees${query ? `?search=${encodeURIComponent(query)}` : ''}`;
-      const res = await fetch(url, {
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setEmployees(data.data);
+      const res = await api.organization.getEmployees(query ? { search: query } : undefined);
+      if (res.success && Array.isArray(res.data)) {
+        setEmployees(res.data);
       } else {
-        // Fallback demo indicator when unauthenticated / server initial
         setEmployees([]);
       }
     } catch (err: any) {
-      setError('Unable to load employees. Ensure NestJS API is running on port 4000.');
+      setError('Unable to load employee directory. Please check network connection.');
     } finally {
       setLoading(false);
     }

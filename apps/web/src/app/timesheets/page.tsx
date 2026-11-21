@@ -47,6 +47,16 @@ export default function TimesheetsPage() {
   // Table rows initialized cleanly from backend or user entry
   const [rows, setRows] = useState<TimesheetRow[]>([]);
 
+  // Dynamic current week range display
+  const weekRangeString = (() => {
+    const curr = new Date();
+    const day = curr.getDay();
+    const diffToMonday = curr.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(curr.setDate(diffToMonday));
+    const friday = new Date(new Date(monday).setDate(monday.getDate() + 4));
+    return `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${friday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  })();
+
   // Load live data on mount
   useEffect(() => {
     async function initTimesheets() {
@@ -54,9 +64,11 @@ export default function TimesheetsPage() {
         setLoading(true);
         // Load projects
         const projRes = await api.projects.list();
+        let loadedProjects: any[] = [];
         if (projRes.success && Array.isArray(projRes.data) && projRes.data.length > 0) {
-          setProjectsList(projRes.data);
-          setNewEntryProject(projRes.data[0].id);
+          loadedProjects = projRes.data;
+          setProjectsList(loadedProjects);
+          setNewEntryProject(loadedProjects[0].id);
         }
 
         // Load today's timesheet from backend
@@ -66,6 +78,44 @@ export default function TimesheetsPage() {
           setCurrentTimesheetId(dailyRes.data.id || null);
           if (dailyRes.data.status === 'SUBMITTED' || dailyRes.data.status === 'APPROVED') {
             setSubmitted(true);
+          }
+
+          // Populate rows from existing entries if present
+          if (Array.isArray(dailyRes.data.entries) && dailyRes.data.entries.length > 0) {
+            const mappedRows: TimesheetRow[] = dailyRes.data.entries.map((e: any, idx: number) => {
+              const matchedProj = loadedProjects.find((p: any) => p.id === e.projectId);
+              const hrs = (Number(e.durationMinutes) || 0) / 60;
+              const dailyHrs = Number((hrs / 5).toFixed(1)) || 1.6;
+              return {
+                id: e.id || `entry-${idx}`,
+                projectId: e.projectId || (loadedProjects[0]?.id ?? 'proj-1'),
+                project: matchedProj?.name || 'Assigned Project',
+                category: e.description || 'General Development & Deliverables',
+                color: ['#FF7A00', '#F59E0B', '#6366F1', '#14B8A6'][idx % 4],
+                mon: dailyHrs,
+                tue: dailyHrs,
+                wed: dailyHrs,
+                thu: dailyHrs,
+                fri: dailyHrs,
+              };
+            });
+            setRows(mappedRows);
+          } else if (loadedProjects.length > 0) {
+            // Provide starter active project row so user can immediately view/edit/submit
+            setRows([
+              {
+                id: 'row-default-1',
+                projectId: loadedProjects[0].id,
+                project: loadedProjects[0].name,
+                category: 'Sprint Deliverables & Platform Development',
+                color: '#FF7A00',
+                mon: 8.0,
+                tue: 8.0,
+                wed: 8.0,
+                thu: 8.0,
+                fri: 8.0,
+              },
+            ]);
           }
         }
 
@@ -93,12 +143,25 @@ export default function TimesheetsPage() {
 
   const handleSaveDraft = async () => {
     try {
+      if (rows.length === 0) {
+        setFeedback({ type: 'error', message: 'Please add at least one timesheet entry.' });
+        return;
+      }
       const todayStr = new Date().toISOString().split('T')[0];
-      const entries = rows.map((r) => ({
-        projectId: r.projectId.startsWith('proj-') && projectsList[0]?.id ? projectsList[0].id : r.projectId,
-        durationMinutes: Math.round(r.mon * 60),
-        taskSummary: `${r.project} - ${r.category}`,
-      }));
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const defaultProjId = projectsList[0]?.id && uuidRegex.test(projectsList[0].id) ? projectsList[0].id : undefined;
+
+      const entries = rows.map((r) => {
+        const rowHours = r.mon + r.tue + r.wed + r.thu + r.fri;
+        const durationMinutes = Math.max(30, Math.round(rowHours * 60));
+        const validProjectId = r.projectId && uuidRegex.test(r.projectId) ? r.projectId : defaultProjId;
+
+        return {
+          projectId: validProjectId,
+          description: `${r.project} - ${r.category}`,
+          durationMinutes,
+        };
+      });
 
       const res = await api.timesheets.logDaily({
         workDate: todayStr,
@@ -119,38 +182,54 @@ export default function TimesheetsPage() {
 
   const handleSubmitTimesheet = async () => {
     try {
-      if (currentTimesheetId) {
-        const res = await api.timesheets.submit(currentTimesheetId);
-        if (res.success) {
-          setSubmitted(true);
-          setFeedback({ type: 'success', message: 'Timesheet submitted for manager approval!' });
-        } else {
-          setFeedback({ type: 'error', message: res.error || 'Failed to submit timesheet' });
-        }
-      } else {
-        // First save draft then submit
-        const todayStr = new Date().toISOString().split('T')[0];
-        const draftRes = await api.timesheets.logDaily({
-          workDate: todayStr,
-          entries: rows.map((r) => ({
-            projectId: projectsList[0]?.id || r.projectId,
-            durationMinutes: Math.round(r.mon * 60),
-            taskSummary: `${r.project} - ${r.category}`,
-          })),
-        });
+      if (rows.length === 0) {
+        setFeedback({ type: 'error', message: 'Please add at least one project entry with logged hours before submitting.' });
+        return;
+      }
 
-        if (draftRes.success && draftRes.data?.id) {
-          setCurrentTimesheetId(draftRes.data.id);
-          const subRes = await api.timesheets.submit(draftRes.data.id);
-          if (subRes.success) {
-            setSubmitted(true);
-            setFeedback({ type: 'success', message: 'Timesheet submitted for manager approval!' });
-          } else {
-            setFeedback({ type: 'error', message: subRes.error || 'Failed to submit' });
-          }
-        } else {
-          setFeedback({ type: 'error', message: draftRes.error || 'Failed to initialize timesheet' });
-        }
+      const totalHours = rows.reduce((acc, r) => acc + (r.mon + r.tue + r.wed + r.thu + r.fri), 0);
+      if (totalHours <= 0) {
+        setFeedback({ type: 'error', message: 'Total logged hours must be greater than 0 before submitting.' });
+        return;
+      }
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const defaultProjId = projectsList[0]?.id && uuidRegex.test(projectsList[0].id) ? projectsList[0].id : undefined;
+
+      const entries = rows.map((r) => {
+        const rowHours = r.mon + r.tue + r.wed + r.thu + r.fri;
+        const durationMinutes = Math.max(30, Math.round(rowHours * 60));
+        const validProjectId = r.projectId && uuidRegex.test(r.projectId) ? r.projectId : defaultProjId;
+
+        return {
+          projectId: validProjectId,
+          description: `${r.project} - ${r.category}`,
+          durationMinutes,
+        };
+      });
+
+      // Step 1: Ensure entries are persisted to the database first
+      const draftRes = await api.timesheets.logDaily({
+        workDate: todayStr,
+        entries,
+      });
+
+      if (!draftRes.success || !draftRes.data?.id) {
+        setFeedback({ type: 'error', message: draftRes.error || 'Failed to record timesheet entries before submitting' });
+        return;
+      }
+
+      const targetId = draftRes.data.id;
+      setCurrentTimesheetId(targetId);
+
+      // Step 2: Submit the timesheet for manager approval
+      const subRes = await api.timesheets.submit(targetId);
+      if (subRes.success) {
+        setSubmitted(true);
+        setFeedback({ type: 'success', message: 'Timesheet submitted successfully for manager approval!' });
+      } else {
+        setFeedback({ type: 'error', message: subRes.error || 'Failed to submit timesheet' });
       }
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Submission error' });
@@ -186,15 +265,15 @@ export default function TimesheetsPage() {
   };
 
   const handleAddEntry = () => {
-    const selectedProj = projectsList.find((p) => p.id === newEntryProject);
+    const selectedProj = projectsList.find((p) => p.id === newEntryProject) || projectsList[0];
     const hours = parseFloat(newEntryHours) || 2.0;
 
     const newRow: TimesheetRow = {
       id: `row-${Date.now()}`,
-      projectId: newEntryProject || 'proj-custom',
-      project: selectedProj?.name || 'Custom Project',
-      category: newEntryTask || 'General Task',
-      color: ['#F59E0B', '#EC4899', '#6366F1', '#14B8A6'][rows.length % 4],
+      projectId: selectedProj?.id || newEntryProject || 'proj-custom',
+      project: selectedProj?.name || 'Project Deliverables',
+      category: newEntryTask.trim() || 'Core Engineering & Tasks',
+      color: ['#FF7A00', '#F59E0B', '#6366F1', '#14B8A6'][rows.length % 4],
       mon: hours,
       tue: hours,
       wed: hours,
@@ -290,7 +369,7 @@ export default function TimesheetsPage() {
               </button>
               <div className="flex items-center gap-2 font-bold text-sm text-[#1F2937]">
                 <Calendar className="w-4 h-4 text-[#FF8A00]" />
-                <span>Jan 20 – Jan 26, 2025</span>
+                <span>{weekRangeString}</span>
               </div>
               <button className="p-1.5 rounded-lg border border-[#E2DDD5] hover:bg-[#F8F5F0] text-[#64748B] transition-colors">
                 <ChevronRight className="w-4 h-4" />

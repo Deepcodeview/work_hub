@@ -33,11 +33,17 @@ export default function DocumentsPage() {
     try {
       const headers = { Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}` };
       const [foldRes, fileRes] = await Promise.all([
-        fetch('/api/v1/documents/folders', { headers }),
-        fetch('/api/v1/documents/files', { headers }),
+        fetch('/api/v1/documents/folders', { headers }).catch(() => null),
+        fetch('/api/v1/documents/files', { headers }).catch(() => null),
       ]);
-      if (foldRes.ok) setFolders(await foldRes.json());
-      if (fileRes.ok) setFiles(await fileRes.json());
+      if (foldRes && foldRes.ok) {
+        const d = await foldRes.json();
+        setFolders(Array.isArray(d) ? d : d.data || []);
+      }
+      if (fileRes && fileRes.ok) {
+        const f = await fileRes.json();
+        setFiles(Array.isArray(f) ? f : f.data || []);
+      }
     } catch {
       // offline fallback
     } finally {

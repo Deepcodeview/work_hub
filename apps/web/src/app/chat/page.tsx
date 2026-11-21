@@ -32,9 +32,10 @@ export default function ChatPage() {
     try {
       const res = await fetch('/api/v1/chat/conversations', {
         headers: { Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      }).catch(() => null);
+      if (res && res.ok) {
+        const raw = await res.json();
+        const data = Array.isArray(raw) ? raw : raw.data || [];
         setConversations(data);
         if (data.length > 0 && !activeConv) {
           setActiveConv(data[0]);
@@ -51,9 +52,10 @@ export default function ChatPage() {
     try {
       const res = await fetch(`/api/v1/chat/conversations/${convId}/messages`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}` },
-      });
-      if (res.ok) {
-        setMessages(await res.json());
+      }).catch(() => null);
+      if (res && res.ok) {
+        const raw = await res.json();
+        setMessages(Array.isArray(raw) ? raw : raw.data || []);
       }
     } catch {
       // offline fallback
@@ -183,9 +185,8 @@ export default function ChatPage() {
                     <button
                       key={c.id}
                       onClick={() => setActiveConv(c)}
-                      className={`w-full text-left p-3.5 transition-colors flex flex-col gap-1 ${
-                        isActive ? 'bg-[#FFF3E8]' : 'hover:bg-[#F1F5F9]'
-                      }`}
+                      className={`w-full text-left p-3.5 transition-colors flex flex-col gap-1 ${isActive ? 'bg-[#FFF3E8]' : 'hover:bg-[#F1F5F9]'
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className={`text-sm font-semibold ${isActive ? 'text-[#FF8A00]' : 'text-[#1F2937]'}`}>

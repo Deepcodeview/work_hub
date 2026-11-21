@@ -123,7 +123,12 @@ export class TimesheetsController {
     if (!user.employeeId) {
       return { success: true, data: [] };
     }
-    const pending = await this.timesheetsService.getPendingApprovals(user.employeeId);
+    const isSuperAdmin =
+      user.roles.includes('SYSTEM_ADMIN') || user.roles.includes('HR_ADMIN');
+    const pending = await this.timesheetsService.getPendingApprovals(
+      user.employeeId,
+      isSuperAdmin
+    );
     return {
       success: true,
       data: pending,
