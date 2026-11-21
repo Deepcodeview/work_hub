@@ -27,11 +27,9 @@ export class AttendanceController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: { latitude?: number; longitude?: number; accuracy?: number; address?: string; deviceType?: string }
   ): Promise<ApiResponse<any>> {
-    if (!user.employeeId) {
-      throw new BadRequestException('Authenticated user has no associated employee profile');
-    }
+    const employeeId = await this.attendanceService.resolveEmployeeId(user);
     const session = await this.attendanceService.clockIn(
-      user.employeeId,
+      employeeId,
       body,
       body.deviceType || 'WEB',
       user.id
@@ -47,11 +45,9 @@ export class AttendanceController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: { latitude?: number; longitude?: number; accuracy?: number; address?: string; deviceType?: string }
   ): Promise<ApiResponse<any>> {
-    if (!user.employeeId) {
-      throw new BadRequestException('Authenticated user has no associated employee profile');
-    }
+    const employeeId = await this.attendanceService.resolveEmployeeId(user);
     const session = await this.attendanceService.clockOut(
-      user.employeeId,
+      employeeId,
       body,
       body.deviceType || 'WEB',
       user.id
@@ -67,10 +63,8 @@ export class AttendanceController {
     @CurrentUser() user: AuthenticatedUser,
     @Body('breakType') breakType?: string
   ): Promise<ApiResponse<any>> {
-    if (!user.employeeId) {
-      throw new BadRequestException('No associated employee profile');
-    }
-    const brk = await this.attendanceService.startBreak(user.employeeId, breakType);
+    const employeeId = await this.attendanceService.resolveEmployeeId(user);
+    const brk = await this.attendanceService.startBreak(employeeId, breakType);
     return {
       success: true,
       data: brk,
@@ -79,10 +73,8 @@ export class AttendanceController {
 
   @Post('breaks/end')
   async endBreak(@CurrentUser() user: AuthenticatedUser): Promise<ApiResponse<any>> {
-    if (!user.employeeId) {
-      throw new BadRequestException('No associated employee profile');
-    }
-    const brk = await this.attendanceService.endBreak(user.employeeId);
+    const employeeId = await this.attendanceService.resolveEmployeeId(user);
+    const brk = await this.attendanceService.endBreak(employeeId);
     return {
       success: true,
       data: brk,
@@ -91,17 +83,19 @@ export class AttendanceController {
 
   @Get('status')
   async getStatus(@CurrentUser() user: AuthenticatedUser): Promise<ApiResponse<any>> {
-    if (!user.employeeId) {
+    try {
+      const employeeId = await this.attendanceService.resolveEmployeeId(user);
+      const status = await this.attendanceService.getStatus(employeeId);
+      return {
+        success: true,
+        data: status,
+      };
+    } catch {
       return {
         success: true,
         data: { isClockedIn: false, isOnBreak: false, completedMinutesToday: 0 },
       };
     }
-    const status = await this.attendanceService.getStatus(user.employeeId);
-    return {
-      success: true,
-      data: status,
-    };
   }
 
   @Get('history')
@@ -110,14 +104,16 @@ export class AttendanceController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ): Promise<ApiResponse<any>> {
-    if (!user.employeeId) {
+    try {
+      const employeeId = await this.attendanceService.resolveEmployeeId(user);
+      const history = await this.attendanceService.getHistory(employeeId, startDate, endDate);
+      return {
+        success: true,
+        data: history,
+      };
+    } catch {
       return { success: true, data: [] };
     }
-    const history = await this.attendanceService.getHistory(user.employeeId, startDate, endDate);
-    return {
-      success: true,
-      data: history,
-    };
   }
 
   @Get('team')

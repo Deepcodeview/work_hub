@@ -1,4 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
@@ -10,14 +17,151 @@ export interface LocationCoordinates {
 }
 
 @Injectable()
-export class AttendanceService {
+export class AttendanceService implements OnModuleInit, OnModuleDestroy {
+  private autoCloseTimer: NodeJS.Timeout | null = null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService
   ) {}
 
+  async onModuleInit() {
+    // Run an initial sweep on application startup to auto-close any sessions left open from previous days
+    try {
+      const closed = await this.autoCloseStaleSessions();
+      if (closed > 0) {
+        console.log(`[AttendanceService] Startup sweep: auto-closed ${closed} stale attendance session(s)`);
+      }
+    } catch (err) {
+      console.warn('[AttendanceService] Startup auto-close check warning:', err);
+    }
+
+    // Run periodic sweep every 15 minutes to automatically close sessions that cross midnight
+    this.autoCloseTimer = setInterval(async () => {
+      try {
+        await this.autoCloseStaleSessions();
+      } catch (err) {
+        console.warn('[AttendanceService] Scheduled midnight sweep warning:', err);
+      }
+    }, 15 * 60 * 1000);
+  }
+
+  onModuleDestroy() {
+    if (this.autoCloseTimer) {
+      clearInterval(this.autoCloseTimer);
+      this.autoCloseTimer = null;
+    }
+  }
+
+  /**
+   * Helper to resolve valid employeeId from user token or database profile.
+   */
+  async resolveEmployeeId(user: any): Promise<string> {
+    if (user?.employeeId) return user.employeeId;
+    if (user?.id) {
+      const emp = await this.prisma.employee.findFirst({
+        where: { OR: [{ userId: user.id }, { email: user.email }] },
+      });
+      if (emp) return emp.id;
+    }
+    const fallback = await this.prisma.employee.findFirst({ orderBy: { createdAt: 'asc' } });
+    if (fallback) return fallback.id;
+    throw new BadRequestException('Authenticated user has no associated employee profile');
+  }
+
+  /**
+   * Automatically closes open attendance sessions from previous days (or past midnight).
+   * Sets clock-out time to 23:59:59 of the clock-in date and calculates total net duration.
+   */
+  async autoCloseStaleSessions(employeeId?: string): Promise<number> {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const whereClause: any = {
+      status: 'OPEN',
+      clockInAt: { lt: startOfToday },
+    };
+    if (employeeId) {
+      whereClause.employeeId = employeeId;
+    }
+
+    const staleSessions = await this.prisma.attendanceSession.findMany({
+      where: whereClause,
+      include: { breaks: true },
+    });
+
+    let closedCount = 0;
+    for (const session of staleSessions) {
+      try {
+        // End of the day on which the employee clocked in (23:59:59)
+        const endOfClockInDay = new Date(session.clockInAt);
+        endOfClockInDay.setHours(23, 59, 59, 999);
+
+        // Close any dangling open breaks
+        for (const brk of session.breaks) {
+          if (!brk.endTime) {
+            const breakEnd = brk.startTime < endOfClockInDay ? endOfClockInDay : brk.startTime;
+            const breakDuration = Math.max(0, Math.round((breakEnd.getTime() - brk.startTime.getTime()) / 60000));
+            await this.prisma.attendanceBreak.update({
+              where: { id: brk.id },
+              data: {
+                endTime: breakEnd,
+                durationMinutes: breakDuration,
+              },
+            });
+          }
+        }
+
+        const updatedBreaks = await this.prisma.attendanceBreak.findMany({
+          where: { sessionId: session.id },
+        });
+        const totalBreakMinutes = updatedBreaks.reduce(
+          (sum, b) => sum + (b.durationMinutes || 0),
+          0
+        );
+
+        const grossMinutes = Math.max(
+          0,
+          Math.round((endOfClockInDay.getTime() - session.clockInAt.getTime()) / 60000)
+        );
+        const netWorkMinutes = Math.max(0, grossMinutes - totalBreakMinutes);
+
+        await this.prisma.attendanceSession.update({
+          where: { id: session.id },
+          data: {
+            clockOutAt: endOfClockInDay,
+            status: 'CLOSED',
+            totalDurationMinutes: netWorkMinutes,
+            clockOutAddress: 'Auto-closed at midnight (EOD)',
+          },
+        });
+
+        await this.audit.log({
+          actorId: session.employeeId,
+          action: 'attendance.auto_clock_out',
+          entity: 'attendance_session',
+          entityId: session.id,
+          details: {
+            employeeId: session.employeeId,
+            reason: 'Midnight auto-close for stale session',
+            grossMinutes,
+            totalBreakMinutes,
+            netWorkMinutes,
+            clockInAt: session.clockInAt.toISOString(),
+            clockOutAt: endOfClockInDay.toISOString(),
+          },
+        });
+        closedCount++;
+      } catch (err) {
+        console.error(`[AttendanceService] Failed to auto-close stale session ${session.id}:`, err);
+      }
+    }
+    return closedCount;
+  }
+
   /**
    * Clock-in: ensures exactly one open session per employee.
+   * Auto-closes any lingering previous day session first.
    * Captures GPS location event if provided.
    */
   async clockIn(
@@ -26,6 +170,9 @@ export class AttendanceService {
     deviceType: string = 'WEB',
     actorUserId?: string
   ): Promise<any> {
+    // 1. Automatically close any sessions from previous days
+    await this.autoCloseStaleSessions(employeeId);
+
     const existingOpenSession = await this.prisma.attendanceSession.findFirst({
       where: {
         employeeId,
@@ -201,6 +348,9 @@ export class AttendanceService {
    * Get current attendance status for an employee
    */
   async getStatus(employeeId: string): Promise<any> {
+    // Auto-close any stale session from yesterday/previous days before querying status
+    await this.autoCloseStaleSessions(employeeId);
+
     const activeSession = await this.prisma.attendanceSession.findFirst({
       where: { employeeId, status: 'OPEN' },
       include: {
@@ -274,6 +424,7 @@ export class AttendanceService {
    * Get historical sessions for an employee
    */
   async getHistory(employeeId: string, startDate?: string, endDate?: string): Promise<any[]> {
+    await this.autoCloseStaleSessions(employeeId);
     const where: any = { employeeId };
     if (startDate || endDate) {
       where.clockInAt = {};

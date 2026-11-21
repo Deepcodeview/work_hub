@@ -77,12 +77,27 @@ export default function LeavePage() {
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.startDate || !form.endDate) {
+      setFeedback({ type: 'error', message: 'Please select both start and end dates' });
+      return;
+    }
+
+    const start = new Date(form.startDate);
+    const end = new Date(form.endDate);
+    if (end < start) {
+      setFeedback({ type: 'error', message: 'End date cannot precede start date' });
+      return;
+    }
+
+    const diffDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
     try {
       const res = await api.hrms.applyLeave({
         leaveTypeId: form.leaveTypeId || leaveTypes[0]?.id,
         startDate: form.startDate,
         endDate: form.endDate,
-        reason: form.reason,
+        daysCount: diffDays,
+        reason: form.reason || 'Personal leave',
       });
 
       if (res.success) {

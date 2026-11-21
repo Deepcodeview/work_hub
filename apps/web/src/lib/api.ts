@@ -322,7 +322,7 @@ export const api = {
     getLeaveTypes: () => apiFetch('/hrms/leave-types'),
     getLeaveBalances: (year?: number) =>
       apiFetch(`/hrms/leave-balances${year ? `?year=${year}` : ''}`),
-    applyLeave: (dto: { leaveTypeId: string; startDate: string; endDate: string; reason?: string }) =>
+    applyLeave: (dto: { leaveTypeId?: string; startDate: string; endDate: string; daysCount?: number; reason?: string }) =>
       apiFetch('/hrms/leaves/apply', {
         method: 'POST',
         body: JSON.stringify(dto),

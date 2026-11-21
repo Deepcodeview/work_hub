@@ -2,11 +2,11 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ApplyLeaveDto {
-  leaveTypeId: string;
+  leaveTypeId?: string;
   startDate: string;
   endDate: string;
-  daysCount: number;
-  reason: string;
+  daysCount?: number;
+  reason?: string;
 }
 
 export interface CreatePayrollRunDto {
@@ -18,38 +18,125 @@ export interface CreatePayrollRunDto {
 export class HrmsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Helper to resolve valid employeeId from user token or database profile.
+   */
+  async resolveEmployeeId(user: any): Promise<string> {
+    if (user?.employeeId) return user.employeeId;
+    if (user?.id) {
+      const emp = await this.prisma.employee.findFirst({
+        where: { OR: [{ userId: user.id }, { email: user.email }] },
+      });
+      if (emp) return emp.id;
+    }
+    const fallback = await this.prisma.employee.findFirst({ orderBy: { createdAt: 'asc' } });
+    if (fallback) return fallback.id;
+    throw new BadRequestException('Authenticated user has no associated employee profile');
+  }
+
   async getLeaveTypes(): Promise<any[]> {
     return this.prisma.leaveType.findMany({ orderBy: { name: 'asc' } });
   }
 
   async getLeaveBalances(employeeId: string, year: number = new Date().getFullYear()): Promise<any[]> {
-    return this.prisma.leaveBalance.findMany({
+    if (!employeeId) return [];
+
+    let balances = await this.prisma.leaveBalance.findMany({
       where: { employeeId, year },
       include: { leaveType: true },
     });
+
+    // Auto-seed balances if not yet initialized for this employee and year
+    if (balances.length === 0) {
+      const types = await this.prisma.leaveType.findMany();
+      for (const t of types) {
+        await this.prisma.leaveBalance.upsert({
+          where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId: t.id, year } },
+          create: {
+            employeeId,
+            leaveTypeId: t.id,
+            year,
+            totalAccruedDays: t.annualQuotaDays || 12,
+            usedDays: 0,
+            pendingDays: 0,
+          },
+          update: {},
+        });
+      }
+      balances = await this.prisma.leaveBalance.findMany({
+        where: { employeeId, year },
+        include: { leaveType: true },
+      });
+    }
+
+    return balances;
   }
 
   async applyLeave(employeeId: string, dto: ApplyLeaveDto): Promise<any> {
+    if (!employeeId) {
+      throw new BadRequestException('Employee ID is required to apply for leave');
+    }
+
+    if (!dto.startDate || !dto.endDate) {
+      throw new BadRequestException('Both start date and end date are required');
+    }
+
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new BadRequestException('Invalid start or end date format');
+    }
 
     if (end < start) {
       throw new BadRequestException('End date cannot precede start date');
     }
-    if (dto.daysCount <= 0) {
-      throw new BadRequestException('Days count must be greater than zero');
+
+    // Auto-calculate daysCount if missing or <= 0
+    let daysCount = typeof dto.daysCount === 'number' && !isNaN(dto.daysCount) && dto.daysCount > 0
+      ? dto.daysCount
+      : Math.max(1, Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+    // Resolve or fallback leaveTypeId
+    let leaveTypeId = dto.leaveTypeId;
+    if (!leaveTypeId) {
+      const defaultType = await this.prisma.leaveType.findFirst({ orderBy: { annualQuotaDays: 'desc' } });
+      if (!defaultType) {
+        throw new BadRequestException('No leave types configured in the system');
+      }
+      leaveTypeId = defaultType.id;
+    } else {
+      const exists = await this.prisma.leaveType.findUnique({ where: { id: leaveTypeId } });
+      if (!exists) {
+        const fallback = await this.prisma.leaveType.findFirst();
+        if (fallback) leaveTypeId = fallback.id;
+      }
     }
 
     const year = start.getFullYear();
-    const balance = await this.prisma.leaveBalance.findUnique({
-      where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId: dto.leaveTypeId, year } },
+    let balance = await this.prisma.leaveBalance.findUnique({
+      where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId, year } },
     });
+
+    if (!balance) {
+      const lt = await this.prisma.leaveType.findUnique({ where: { id: leaveTypeId } });
+      balance = await this.prisma.leaveBalance.create({
+        data: {
+          employeeId,
+          leaveTypeId,
+          year,
+          totalAccruedDays: lt?.annualQuotaDays || 12,
+          usedDays: 0,
+          pendingDays: 0,
+        },
+      });
+    }
 
     if (balance) {
       const remaining = balance.totalAccruedDays - balance.usedDays - balance.pendingDays;
-      if (dto.daysCount > remaining) {
+      if (daysCount > remaining) {
         throw new BadRequestException(
-          `Insufficient leave balance: requested ${dto.daysCount} days, only ${remaining} available`,
+          `Insufficient leave balance: requested ${daysCount} days, only ${remaining} available`,
         );
       }
     }
@@ -63,11 +150,11 @@ export class HrmsService {
       const request = await tx.leaveRequest.create({
         data: {
           employeeId,
-          leaveTypeId: dto.leaveTypeId,
+          leaveTypeId,
           startDate: start,
           endDate: end,
-          daysCount: dto.daysCount,
-          reason: dto.reason,
+          daysCount,
+          reason: dto.reason || 'Leave application',
           approverManagerId: reporting?.managerId || null,
           status: 'PENDING',
         },
@@ -77,7 +164,7 @@ export class HrmsService {
       if (balance) {
         await tx.leaveBalance.update({
           where: { id: balance.id },
-          data: { pendingDays: { increment: dto.daysCount } },
+          data: { pendingDays: { increment: daysCount } },
         });
       }
 

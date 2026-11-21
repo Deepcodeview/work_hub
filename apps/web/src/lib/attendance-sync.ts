@@ -85,6 +85,35 @@ export function useAttendanceSync() {
 
         if (isClocked && session?.clockInAt) {
           const serverStart = new Date(session.clockInAt).getTime();
+          const startDate = new Date(session.clockInAt);
+          const now = new Date();
+          const isSameCalendarDay =
+            startDate.getFullYear() === now.getFullYear() &&
+            startDate.getMonth() === now.getMonth() &&
+            startDate.getDate() === now.getDate();
+
+          // If session is from a previous calendar day (e.g. yesterday before midnight), treat as closed for today
+          if (!isSameCalendarDay) {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(STORAGE_KEY);
+            }
+            setState((prev) => ({
+              ...prev,
+              clockedIn: false,
+              clockInTimestamp: null,
+              activeSessionId: undefined,
+              onBreak: false,
+              elapsedSeconds: 0,
+              completedMinutesToday: typeof res.data.completedMinutesToday === 'number' ? res.data.completedMinutesToday : prev.completedMinutesToday,
+              completedMinutesThisWeek: typeof res.data.completedMinutesThisWeek === 'number' ? res.data.completedMinutesThisWeek : prev.completedMinutesThisWeek,
+              totalBreakMinutesToday: typeof res.data.totalBreakMinutesToday === 'number' ? res.data.totalBreakMinutesToday : prev.totalBreakMinutesToday,
+              loading: false,
+              syncing: false,
+              lastSyncedAt: new Date(),
+            }));
+            return;
+          }
+
           const elapsed = Math.max(0, Math.floor((Date.now() - serverStart) / 1000));
 
           if (typeof window !== 'undefined') {
@@ -168,12 +197,24 @@ export function useAttendanceSync() {
     };
   }, [fetchServerStatus]);
 
-  // 4. Live 1-second ticking counter when active
+  // 4. Live 1-second ticking counter when active with midnight rollover reset
   useEffect(() => {
     let tickInterval: any = null;
 
     if (state.clockedIn && state.clockInTimestamp && !state.onBreak) {
       tickInterval = setInterval(() => {
+        const now = new Date();
+        const start = new Date(state.clockInTimestamp!);
+        // If current day is different from clock-in day (passed midnight), refresh status to reset UI to Clock In
+        if (
+          now.getDate() !== start.getDate() ||
+          now.getMonth() !== start.getMonth() ||
+          now.getFullYear() !== start.getFullYear()
+        ) {
+          fetchServerStatus(false);
+          return;
+        }
+
         setState((prev) => {
           if (!prev.clockInTimestamp) return prev;
           const secs = Math.max(0, Math.floor((Date.now() - prev.clockInTimestamp) / 1000));
@@ -185,7 +226,7 @@ export function useAttendanceSync() {
     return () => {
       if (tickInterval) clearInterval(tickInterval);
     };
-  }, [state.clockedIn, state.clockInTimestamp, state.onBreak]);
+  }, [state.clockedIn, state.clockInTimestamp, state.onBreak, fetchServerStatus]);
 
   /**
    * Helper to fetch device coordinates
