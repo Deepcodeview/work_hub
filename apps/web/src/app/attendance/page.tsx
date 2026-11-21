@@ -15,20 +15,30 @@ import {
   Printer,
 } from '../../components/icons';
 import { api } from '../../lib/api';
+import { useAttendanceSync } from '../../lib/attendance-sync';
 
 export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'history' | 'corrections'>('attendance');
-  const [clockedIn, setClockedIn] = useState(false);
-  const [clockInTimestamp, setClockInTimestamp] = useState<number | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [completedMinutesToday, setCompletedMinutesToday] = useState(0);
-  const [totalBreakMinutesToday, setTotalBreakMinutesToday] = useState(0);
-  const [onBreak, setOnBreak] = useState(false);
   const [currentTime, setCurrentTime] = useState('09:28 AM');
-  const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-
   const [history, setHistory] = useState<any[]>([]);
+
+  // Synchronized cross-device live attendance hook
+  const {
+    clockedIn,
+    clockInTimestamp,
+    onBreak,
+    elapsedSeconds,
+    completedMinutesToday,
+    totalBreakMinutesToday,
+    loading,
+    syncing,
+    clockIn,
+    clockOut,
+    startBreak,
+    endBreak,
+    refresh: refreshAttendance,
+  } = useAttendanceSync();
 
   // Real GPS Geolocation & Radius Verification
   const [gpsLocation, setGpsLocation] = useState<{
@@ -153,33 +163,6 @@ export default function AttendancePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize active session from local storage or server
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('workhub_clock_in_time') : null;
-    if (saved) {
-      const ts = parseInt(saved, 10);
-      if (!isNaN(ts) && ts > 0) {
-        setClockInTimestamp(ts);
-        setClockedIn(true);
-        setElapsedSeconds(Math.max(0, Math.floor((Date.now() - ts) / 1000)));
-      }
-    }
-  }, []);
-
-  // Live ticking work stopwatch
-  useEffect(() => {
-    let interval: any = null;
-    if (clockedIn && clockInTimestamp && !onBreak) {
-      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - clockInTimestamp) / 1000)));
-      interval = setInterval(() => {
-        setElapsedSeconds(Math.max(0, Math.floor((Date.now() - clockInTimestamp) / 1000)));
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [clockedIn, clockInTimestamp, onBreak]);
-
   const elapsedHours = Math.floor(elapsedSeconds / 3600);
   const elapsedMinutes = Math.floor((elapsedSeconds % 3600) / 60);
   const elapsedSecs = elapsedSeconds % 60;
@@ -199,48 +182,9 @@ export default function AttendancePage() {
   // Target: 8h = 480m = 28800s
   const shiftProgressPercent = Math.min(100, Math.round((totalTodaySeconds / (8 * 3600)) * 100));
 
-  // Load live attendance from backend
+  // Load history from backend
   useEffect(() => {
-    async function loadAttendance() {
-      const res = await api.attendance.getStatus();
-      if (res.success && res.data) {
-        if (typeof res.data.completedMinutesToday === 'number') {
-          setCompletedMinutesToday(res.data.completedMinutesToday);
-        }
-        if (typeof res.data.totalBreakMinutesToday === 'number') {
-          setTotalBreakMinutesToday(res.data.totalBreakMinutesToday);
-        }
-
-        const session = res.data.currentSession || res.data.activeSession;
-        const isClocked = Boolean(res.data.isClockedIn || res.data.hasOpenSession || session);
-
-        if (isClocked && session) {
-          setClockedIn(true);
-          const serverStart = session.clockInAt
-            ? new Date(session.clockInAt).getTime()
-            : null;
-          const saved = typeof window !== 'undefined' ? localStorage.getItem('workhub_clock_in_time') : null;
-          const ts = serverStart || (saved ? parseInt(saved, 10) : Date.now());
-          setClockInTimestamp(ts);
-          setElapsedSeconds(Math.max(0, Math.floor((Date.now() - ts) / 1000)));
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('workhub_clock_in_time', ts.toString());
-          }
-        } else if (res.data.isClockedIn === false && !session) {
-          setClockedIn(false);
-          setClockInTimestamp(null);
-          setElapsedSeconds(0);
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('workhub_clock_in_time');
-          }
-        }
-        if (res.data.activeBreak || res.data.currentBreak || res.data.isOnBreak) {
-          setOnBreak(true);
-        } else {
-          setOnBreak(false);
-        }
-      }
-
+    async function loadHistory() {
       const histRes = await api.attendance.getHistory();
       if (histRes.success && Array.isArray(histRes.data)) {
         const formatted = histRes.data.map((item: any) => ({
@@ -254,65 +198,29 @@ export default function AttendancePage() {
         setHistory(formatted);
       }
     }
-    loadAttendance();
+    loadHistory();
   }, []);
 
   const handleClockIn = async () => {
-    setLoading(true);
-    const res = await api.attendance.clockIn({ latitude: 40.7128, longitude: -74.006 });
-    const session = res.data;
-    const serverStart = session?.clockInAt
-      ? new Date(session.clockInAt).getTime()
-      : Date.now();
-    setClockedIn(true);
-    setClockInTimestamp(serverStart);
-    setElapsedSeconds(Math.max(0, Math.floor((Date.now() - serverStart) / 1000)));
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('workhub_clock_in_time', serverStart.toString());
-    }
-    setFeedback('Clock In verified. Attendance work session timer started.');
-    setLoading(false);
+    const res = await clockIn();
+    setFeedback(res.message);
     setTimeout(() => setFeedback(null), 4000);
   };
 
   const handleClockOut = async () => {
-    setLoading(true);
-    const res = await api.attendance.clockOut({ latitude: 40.7128, longitude: -74.006 });
-    const recorded = `${elapsedHours}h ${elapsedMinutes}m ${elapsedSecs}s`;
-    const addedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
-    setCompletedMinutesToday((prev) => prev + addedMinutes);
-    setClockedIn(false);
-    setClockInTimestamp(null);
-    setElapsedSeconds(0);
-    setOnBreak(false);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('workhub_clock_in_time');
-    }
-    setFeedback(`Clock Out registered. Net duration logged: ${recorded}.`);
-    setLoading(false);
+    const res = await clockOut();
+    setFeedback(res.message);
     setTimeout(() => setFeedback(null), 4000);
   };
 
   const handleToggleBreak = async () => {
-    setLoading(true);
     if (!onBreak) {
-      const res = await api.attendance.startBreak('COFFEE');
-      if (res.success) {
-        setOnBreak(true);
-        setFeedback('Break started. Work timer paused.');
-      } else {
-        setOnBreak(true);
-      }
+      await startBreak('COFFEE');
+      setFeedback('Break started. Work timer paused.');
     } else {
-      const res = await api.attendance.endBreak();
-      if (res.success) {
-        setOnBreak(false);
-        setFeedback('Break ended. Work session resumed.');
-      } else {
-        setOnBreak(false);
-      }
+      await endBreak();
+      setFeedback('Break ended. Work session resumed.');
     }
-    setLoading(false);
     setTimeout(() => setFeedback(null), 4000);
   };
 
@@ -398,11 +306,23 @@ export default function AttendancePage() {
                   </span>
                 </div>
 
-                {clockInTimestamp && (
-                  <span className="text-[11px] font-semibold text-[#8A92A6]">
-                    In at {new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {clockInTimestamp && (
+                    <span className="text-[11px] font-semibold text-[#8A92A6]">
+                      In at {new Date(clockInTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => refreshAttendance()}
+                    disabled={syncing}
+                    title="Cross-device sync: Click to refresh live attendance from server"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-gray-800 border border-[#E2E8F0] dark:border-gray-700 text-[10px] text-[#64748B] hover:text-[#FF7A00] transition-all active:scale-95 shadow-2xs"
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${syncing ? 'bg-amber-500 animate-ping' : 'bg-emerald-500'}`} />
+                    <span>{syncing ? 'Syncing...' : 'Live Synced'}</span>
+                    <span className={syncing ? 'animate-spin' : ''}>🔄</span>
+                  </button>
+                </div>
               </div>
 
               {/* Live Work Stopwatch Card */}
