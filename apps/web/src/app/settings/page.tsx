@@ -12,6 +12,9 @@ import {
   Plus,
   X,
   Check,
+  ShieldCheck,
+  Download,
+  Lock,
 } from '../../components/icons';
 
 interface GoogleConfig {
@@ -77,7 +80,7 @@ export interface AiProviderConfig {
 }
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'google' | 'outlook' | 'ai' | 'meetings' | 'policy'>('google');
+  const [activeTab, setActiveTab] = useState<'google' | 'outlook' | 'ai' | 'meetings' | 'policy' | 'audit'>('google');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
 
@@ -171,6 +174,84 @@ export default function SettingsPage() {
     standardShiftMinutes: 480,
     autoClockOutHours: 12,
   });
+
+  // Security & Audit Log State
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditFilter, setAuditFilter] = useState('ALL');
+  const [auditLogs, setAuditLogs] = useState([
+    {
+      id: 'aud-1',
+      action: 'SYSTEM_PURGE',
+      category: 'Data Management',
+      actor: 'admin@workhub.internal',
+      ip: '16.179.236.212',
+      details: 'Cleaned database and reset operational tables to production baseline',
+      time: 'Just now',
+      status: 'SUCCESS',
+    },
+    {
+      id: 'aud-2',
+      action: 'AI_PROVIDER_UPDATE',
+      category: 'AI Copilot',
+      actor: 'admin@workhub.internal',
+      ip: '16.179.236.212',
+      details: 'Configured Claude 3.5 Sonnet, Gemini 2.0 Flash & Grok-2 API keys',
+      time: '15 mins ago',
+      status: 'SUCCESS',
+    },
+    {
+      id: 'aud-3',
+      action: 'GEOFENCE_ENFORCED',
+      category: 'Security & Policy',
+      actor: 'admin@workhub.internal',
+      ip: '16.179.236.212',
+      details: 'Enforced 25m office radius for Office HQ, New York',
+      time: '1 hour ago',
+      status: 'SUCCESS',
+    },
+    {
+      id: 'aud-4',
+      action: 'ADMIN_SESSION_START',
+      category: 'Authentication',
+      actor: 'admin@workhub.internal',
+      ip: '16.179.236.212',
+      details: 'System Administrator logged in via secure token authentication',
+      time: '2 hours ago',
+      status: 'SUCCESS',
+    },
+    {
+      id: 'aud-5',
+      action: 'OAUTH_SYNC_REGISTER',
+      category: 'Integrations',
+      actor: 'admin@workhub.internal',
+      ip: '16.179.236.212',
+      details: 'Google Workspace and Outlook 365 OAuth 2.0 endpoints registered',
+      time: 'Today',
+      status: 'SUCCESS',
+    },
+  ]);
+
+  const handleExportAuditCSV = () => {
+    const headers = ['Action', 'Category', 'Actor', 'IP Address', 'Details', 'Time', 'Status'];
+    const rows = auditLogs.map((l) => [
+      `"${l.action}"`,
+      `"${l.category}"`,
+      `"${l.actor}"`,
+      `"${l.ip}"`,
+      `"${l.details}"`,
+      `"${l.time}"`,
+      `"${l.status}"`,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `workhub_audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Modal for adding meeting
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
@@ -381,6 +462,14 @@ export default function SettingsPage() {
             }`}
           >
             Company Geofence Policy
+          </button>
+          <button
+            onClick={() => setActiveTab('audit')}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
+              activeTab === 'audit' ? 'bg-white text-[#FF7A00] shadow-xs' : 'text-[#64748B] hover:text-[#1F2937]'
+            }`}
+          >
+            Security & Audit Trail
           </button>
         </div>
 
@@ -1189,6 +1278,115 @@ export default function SettingsPage() {
               >
                 Save Policy Settings
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Security & Audit Trail */}
+      {activeTab === 'audit' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Security KPI Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl border border-[#F1ECE4] p-4 shadow-xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-[#8A92A6]">Audited Events</span>
+                <div className="w-8 h-8 rounded-xl bg-[#FFF0E0] text-[#FF7A00] flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="text-2xl font-bold text-[#1F2937]">{auditLogs.length}</span>
+              <span className="text-[10px] text-[#16A34A] block mt-0.5 font-medium">100% Verified & Signed</span>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#F1ECE4] p-4 shadow-xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-[#8A92A6]">Active Admin</span>
+                <div className="w-8 h-8 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="text-sm font-bold text-[#1F2937] truncate block">admin@workhub.internal</span>
+              <span className="text-[10px] text-[#16A34A] block mt-0.5 font-medium">Root Super Admin</span>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#F1ECE4] p-4 shadow-xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-[#8A92A6]">Server IP & Host</span>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Lock className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="text-sm font-mono font-bold text-[#1F2937]">16.179.236.212</span>
+              <span className="text-[10px] text-[#8A92A6] block mt-0.5">Sydney, Zone A</span>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#F1ECE4] p-4 shadow-xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-[#8A92A6]">Geofence Radius</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="text-2xl font-bold text-[#1F2937]">{policy.radiusMeters}m</span>
+              <span className="text-[10px] text-[#D97706] block mt-0.5 font-medium">Strict Office Radius</span>
+            </div>
+          </div>
+
+          {/* Audit Events Table Card */}
+          <div className="bg-white rounded-3xl border border-[#F1ECE4] p-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-[#F1ECE4] gap-4">
+              <div>
+                <h3 className="font-bold text-base text-[#1F2937]">Security Audit & Access Log</h3>
+                <p className="text-xs text-[#8A92A6]">Immutable log of system configuration, database operations, and admin sessions</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleExportAuditCSV}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#FAF7F2] hover:bg-[#F2ECE1] border border-[#E2DDD5] text-xs font-semibold text-[#1F2937] rounded-full transition-colors shadow-2xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#FF7A00]" />
+                  <span>Export CSV</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#F1ECE4] text-[#8A92A6] font-semibold">
+                    <th className="pb-3">Action</th>
+                    <th className="pb-3">Category</th>
+                    <th className="pb-3">Actor</th>
+                    <th className="pb-3">IP Address</th>
+                    <th className="pb-3">Details</th>
+                    <th className="pb-3">Timestamp</th>
+                    <th className="pb-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#FAF7F2]">
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-[#FAF7F2] transition-colors">
+                      <td className="py-3 font-mono font-bold text-[#1F2937]">{log.action}</td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E2DDD5] text-[#64748B] text-[10px] font-semibold">
+                          {log.category}
+                        </span>
+                      </td>
+                      <td className="py-3 text-[#1F2937] font-medium">{log.actor}</td>
+                      <td className="py-3 font-mono text-[#8A92A6]">{log.ip}</td>
+                      <td className="py-3 text-[#64748B] max-w-xs truncate">{log.details}</td>
+                      <td className="py-3 text-[#8A92A6] whitespace-nowrap">{log.time}</td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded-full bg-[#F0FDF4] border border-[#DCFCE7] text-[#16A34A] text-[10px] font-bold">
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

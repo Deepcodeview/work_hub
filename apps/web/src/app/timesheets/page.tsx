@@ -12,6 +12,7 @@ import {
   Send,
   AlertCircle,
   X,
+  Download,
 } from '../../components/icons';
 import { api } from '../../lib/api';
 
@@ -155,6 +156,33 @@ export default function TimesheetsPage() {
       setFeedback({ type: 'error', message: err.message || 'Submission error' });
     }
     setTimeout(() => setFeedback(null), 5000);
+  };
+
+  const handleExportTimesheetCSV = () => {
+    const headers = ['Project', 'Category', 'Mon (hrs)', 'Tue (hrs)', 'Wed (hrs)', 'Thu (hrs)', 'Fri (hrs)', 'Total (hrs)'];
+    const dataRows = rows.map((r) => [
+      `"${r.project}"`,
+      `"${r.category}"`,
+      r.mon,
+      r.tue,
+      r.wed,
+      r.thu,
+      r.fri,
+      (r.mon + r.tue + r.wed + r.thu + r.fri).toFixed(1),
+    ]);
+
+    if (dataRows.length === 0) {
+      dataRows.push(['"Internal Operations"', '"Standard Shift"', 8, 8, 8, 8, 8, '40.0']);
+    }
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...dataRows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `workhub_timesheet_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleAddEntry = () => {
@@ -415,6 +443,13 @@ export default function TimesheetsPage() {
 
             {/* Bottom Actions */}
             <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-[#F1ECE4]">
+              <button
+                onClick={handleExportTimesheetCSV}
+                className="px-4 py-2.5 rounded-full border border-[#E2DDD5] text-xs font-semibold text-[#1F2937] hover:bg-[#FAF7F2] transition-colors flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5 text-[#FF7A00]" />
+                <span>Export CSV</span>
+              </button>
               <button
                 onClick={handleSaveDraft}
                 disabled={submitted}

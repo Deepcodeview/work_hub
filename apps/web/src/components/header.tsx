@@ -25,6 +25,7 @@ import {
 } from './icons';
 import { useNavigation } from './navigation-context';
 import { api, getStoredUser, clearStoredSession } from '../lib/api';
+import { CommandPalette } from './command-palette';
 
 export function Header() {
   const { toggleSidebar } = useNavigation();
@@ -34,6 +35,7 @@ export function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [appsOpen, setAppsOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // User state
   const [user, setUser] = useState<any>(null);
@@ -78,6 +80,18 @@ export function Header() {
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Global Command Palette shortcut (⌘ K / Ctrl + K)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleSignOut = () => {
@@ -148,15 +162,19 @@ export function Header() {
         </Link>
       </div>
 
-      {/* Center: Search Bar */}
+      {/* Center: Search Bar (Triggers Command Palette) */}
       <div className="flex-1 max-w-xl mx-2 sm:mx-6">
         <div className="relative w-full">
-          <div className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 bg-[#F6F3EE] hover:bg-[#F2EEE7] transition-colors rounded-full border border-[#EBE3D7]/80 text-sm text-[#8A94A6]">
+          <div
+            onClick={() => setCommandPaletteOpen(true)}
+            className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2 bg-[#F6F3EE] hover:bg-[#F2EEE7] transition-colors rounded-full border border-[#EBE3D7]/80 text-sm text-[#8A94A6] cursor-pointer"
+          >
             <Search className="w-4 h-4 text-[#9CA3AF] shrink-0" />
             <input
               type="text"
-              placeholder="Search people, projects, tasks..."
-              className="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#1F2937] placeholder-[#9CA3AF]"
+              readOnly
+              placeholder="Search people, projects, tasks... (or press ⌘ K)"
+              className="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#1F2937] placeholder-[#9CA3AF] cursor-pointer"
             />
             <kbd className="hidden md:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold text-[#8A94A6] bg-white border border-[#E2DDD5] rounded-md shadow-xs shrink-0">
               ⌘ K
@@ -408,6 +426,12 @@ export function Header() {
           </div>
         )}
       </div>
+
+      {/* Global Command Palette (⌘ K) Modal */}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
     </header>
   );
 }
