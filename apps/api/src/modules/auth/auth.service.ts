@@ -52,11 +52,11 @@ export class AuthService {
     });
 
     const payload = { sub: user.id, email: user.email, roles };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '8h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-    // Create session in database
+    // Create session in database (7 days validity)
     const tokenHash = crypto.createHash('sha256').update(accessToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     await this.prisma.session.create({
       data: {

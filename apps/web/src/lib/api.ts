@@ -25,7 +25,21 @@ export interface UserSession {
 
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('workhub_token');
+  const local = localStorage.getItem('workhub_token') || localStorage.getItem('token');
+  if (local) return local;
+
+  // Fallback to cookie if localStorage was cleared
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)workhub_token=([^;]+)/);
+    if (match && match[1]) {
+      const decoded = decodeURIComponent(match[1]);
+      localStorage.setItem('workhub_token', decoded);
+      return decoded;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
 }
 
 export function setStoredSession(session: UserSession): void {
@@ -102,6 +116,18 @@ export async function apiFetch<T = any>(
     const body = await res.json().catch(() => null);
 
     if (!res.ok) {
+      if (res.status === 401) {
+        clearStoredSession();
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          setTimeout(() => {
+            window.location.href = '/login?expired=1';
+          }, 1200);
+        }
+        return {
+          success: false,
+          error: 'Your session has expired. Redirecting to sign in...',
+        };
+      }
       return {
         success: false,
         error: body?.message || `HTTP error ${res.status}`,

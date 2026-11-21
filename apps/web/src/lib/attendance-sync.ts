@@ -236,6 +236,9 @@ export function useAttendanceSync() {
         if (res.error?.includes('already open')) {
           return { success: true, message: 'Existing active session synchronized from server!' };
         }
+        if (res.error?.includes('401') || res.error?.includes('expired') || res.error?.includes('Unauthorized')) {
+          return { success: false, message: 'Session expired. Please sign in again to clock in.' };
+        }
         return { success: false, message: res.error || 'Failed to clock in' };
       }
     } catch (err: any) {
@@ -256,6 +259,13 @@ export function useAttendanceSync() {
 
       await fetchServerStatus(false);
       notifyOtherTabs();
+
+      if (!res.success) {
+        if (res.error?.includes('401') || res.error?.includes('expired') || res.error?.includes('Unauthorized')) {
+          return { success: false, message: 'Session expired. Please sign in again to clock out.' };
+        }
+        return { success: false, message: res.error || 'Clock out failed' };
+      }
 
       const hours = Math.floor(state.elapsedSeconds / 3600);
       const mins = Math.floor((state.elapsedSeconds % 3600) / 60);

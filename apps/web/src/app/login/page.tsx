@@ -25,6 +25,12 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && (window.location.search.includes('expired') || window.location.search.includes('401'))) {
+      setError('Your previous session has expired. Please sign in to resume your active work session.');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
