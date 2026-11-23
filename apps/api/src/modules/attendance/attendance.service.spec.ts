@@ -30,6 +30,8 @@ describe('AttendanceService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockPrisma.attendanceSession.findMany.mockResolvedValue([]);
+    mockPrisma.attendanceBreak.findMany.mockResolvedValue([]);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AttendanceService,

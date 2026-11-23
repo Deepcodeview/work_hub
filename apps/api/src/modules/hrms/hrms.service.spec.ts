@@ -10,7 +10,9 @@ describe('HrmsService', () => {
   beforeEach(async () => {
     prisma = {
       leaveType: {
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue({ id: 'lt-1', name: 'Paid Time Off', defaultDays: 15 }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'lt-1', name: 'Paid Time Off', defaultDays: 15 }),
       },
       leaveBalance: {
         findMany: jest.fn(),
