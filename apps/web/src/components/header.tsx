@@ -190,8 +190,8 @@ export function Header() {
         </Link>
       </div>
 
-      {/* Center: Search Bar (Triggers Command Palette) */}
-      <div className="flex-1 max-w-xl mx-2 sm:mx-6">
+      {/* Center: Search Bar (Desktop / Tablet) */}
+      <div className="hidden md:block flex-1 max-w-xl mx-4 lg:mx-6">
         <div className="relative w-full">
           <div
             onClick={() => setCommandPaletteOpen(true)}
@@ -204,7 +204,7 @@ export function Header() {
               placeholder="Search people, projects, tasks... (or press ⌘ K)"
               className="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-[#1F2937] placeholder-[#9CA3AF] cursor-pointer"
             />
-            <kbd className="hidden md:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold text-[#8A94A6] bg-white border border-[#E2DDD5] rounded-md shadow-xs shrink-0">
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold text-[#8A94A6] bg-white border border-[#E2DDD5] rounded-md shadow-xs shrink-0">
               ⌘ K
             </kbd>
           </div>
@@ -213,6 +213,15 @@ export function Header() {
 
       {/* Right User Actions */}
       <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 relative" ref={containerRef}>
+        {/* Mobile Search Button */}
+        <button
+          onClick={() => setCommandPaletteOpen(true)}
+          className="md:hidden p-1.5 sm:p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] transition-colors shrink-0"
+          title="Search"
+          aria-label="Open search dialog"
+        >
+          <Search className="w-5 h-5" />
+        </button>
         {/* 1. Notification Bell Button */}
         <button
           onClick={() => {

@@ -68,6 +68,7 @@ export default function DocumentsPage() {
       }
       const kb = file.size / 1024;
       setFileSizeStr(kb > 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb.toFixed(1)} KB`);
+      setShowFileModal(true);
     }
   };
 
@@ -123,11 +124,29 @@ export default function DocumentsPage() {
     }
   };
 
+  const handleOpenUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    } else {
+      setShowFileModal(true);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* Global native file input for direct picker triggers */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt"
+      />
+
       <div className="flex justify-end items-center gap-2 mb-6">
         <Button variant="outline" onClick={() => setShowFolderModal(true)}>+ New Folder</Button>
-        <Button onClick={() => setShowFileModal(true)}>+ Upload Document</Button>
+        <Button onClick={handleOpenUpload}>+ Upload Document</Button>
       </div>
 
       {showFolderModal && (

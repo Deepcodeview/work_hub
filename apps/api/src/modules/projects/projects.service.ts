@@ -38,28 +38,33 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(employeeId: string, isAdmin: boolean = false): Promise<any[]> {
-    if (isAdmin) {
-      return this.prisma.project.findMany({
-        include: {
-          owner: { select: { id: true, firstName: true, lastName: true, employeeCode: true } },
-          _count: { select: { tasks: true, members: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-    }
+    const where = isAdmin
+      ? undefined
+      : {
+          OR: [
+            { ownerId: employeeId },
+            { members: { some: { employeeId } } },
+          ],
+        };
 
-    return this.prisma.project.findMany({
-      where: {
-        OR: [
-          { ownerId: employeeId },
-          { members: { some: { employeeId } } },
-        ],
-      },
+    const raw = await this.prisma.project.findMany({
+      ...(where && { where }),
       include: {
         owner: { select: { id: true, firstName: true, lastName: true, employeeCode: true } },
+        tasks: { select: { status: true } },
         _count: { select: { tasks: true, members: true } },
       },
       orderBy: { createdAt: 'desc' },
+    });
+
+    const projects = Array.isArray(raw) ? raw : [];
+    return projects.map((p: any) => {
+      const taskList = Array.isArray(p.tasks) ? p.tasks : [];
+      const total = taskList.length;
+      const done = taskList.filter((t: any) => t.status === 'DONE' || t.status === 'COMPLETED').length;
+      const progress = total > 0 ? Math.round((done / total) * 100) : (p.status === 'COMPLETED' ? 100 : 0);
+      const { tasks, ...rest } = p;
+      return { ...rest, progress };
     });
   }
 

@@ -118,8 +118,19 @@ html.dark .text-\[\#64748B\],
 html.dark .text-\[\#8A92A6\],
 html.dark .text-\[\#8A94A6\],
 html.dark .text-\[\#94A3B8\],
-html.dark .text-\[\#9CA3AF\] {
+html.dark .text-\[\#9CA3AF\],
+html.dark .text-\[\#6B7280\],
+html.dark .text-\[\#4B5563\],
+html.dark .text-\[\#374151\],
+html.dark .text-gray-500,
+html.dark .text-gray-600,
+html.dark .text-slate-500,
+html.dark .text-slate-600 {
   color: #CBD5E1 !important;
+}
+
+html.dark th {
+  color: #94A3B8 !important;
 }
 
 /* Secondary surface backgrounds */
