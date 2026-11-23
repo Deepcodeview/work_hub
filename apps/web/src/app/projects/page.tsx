@@ -172,7 +172,7 @@ export default function ProjectsPage() {
             { main: '#FF8A00', bg: '#FFF7ED' },
           ];
           const colorPair = colors[idx % colors.length];
-          const progressVal = proj.progress || (proj.status === 'COMPLETED' ? 100 : 55);
+          const progressVal = typeof proj.progress === 'number' ? proj.progress : (proj.status === 'COMPLETED' ? 100 : 0);
 
           return (
             <Link

@@ -31,6 +31,8 @@ interface TimesheetRow {
 
 export default function TimesheetsPage() {
   const [activeTab, setActiveTab] = useState<'my' | 'team'>('my');
+  const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
+  const [dateOffset, setDateOffset] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [currentTimesheetId, setCurrentTimesheetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,14 +49,21 @@ export default function TimesheetsPage() {
   // Table rows initialized cleanly from backend or user entry
   const [rows, setRows] = useState<TimesheetRow[]>([]);
 
-  // Dynamic current week range display
-  const weekRangeString = (() => {
-    const curr = new Date();
-    const day = curr.getDay();
-    const diffToMonday = curr.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(curr.setDate(diffToMonday));
-    const friday = new Date(new Date(monday).setDate(monday.getDate() + 4));
-    return `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${friday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  // Dynamic date range display for Weekly and Monthly views with navigation
+  const dateRangeString = (() => {
+    const base = new Date();
+    if (viewMode === 'weekly') {
+      const curr = new Date();
+      curr.setDate(base.getDate() + dateOffset * 7);
+      const day = curr.getDay();
+      const diffToMonday = curr.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(curr.setDate(diffToMonday));
+      const friday = new Date(new Date(monday).setDate(monday.getDate() + 4));
+      return `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${friday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    } else {
+      const targetMonth = new Date(base.getFullYear(), base.getMonth() + dateOffset, 1);
+      return targetMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
   })();
 
   // Load live data on mount
@@ -125,6 +134,7 @@ export default function TimesheetsPage() {
     setRows((prev) =>
       prev.map((r) => (r.id === rowId ? { ...r, [day]: Math.max(0, Math.min(24, num)) } : r))
     );
+    setSubmitted(false);
   };
 
   const handleSaveDraft = async () => {
@@ -271,6 +281,7 @@ export default function TimesheetsPage() {
     setRows((prev) => [...prev, newRow]);
     setIsAddModalOpen(false);
     setNewEntryTask('');
+    setSubmitted(false);
     setFeedback({ type: 'success', message: 'Entry added to weekly timesheet!' });
     setTimeout(() => setFeedback(null), 3000);
   };
@@ -351,22 +362,47 @@ export default function TimesheetsPage() {
           {/* Date Range Navigation Bar */}
           <div className="bg-white rounded-2xl border border-[#F1ECE4] p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <button className="p-1.5 rounded-lg border border-[#E2DDD5] hover:bg-[#F8F5F0] text-[#64748B] transition-colors">
+              <button
+                onClick={() => setDateOffset((prev) => prev - 1)}
+                className="p-1.5 rounded-lg border border-[#E2DDD5] hover:bg-[#F8F5F0] text-[#64748B] hover:text-[#1F2937] transition-all active:scale-95"
+                title={viewMode === 'weekly' ? 'Previous Week' : 'Previous Month'}
+                aria-label="Previous period"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2 font-bold text-sm text-[#1F2937]">
                 <Calendar className="w-4 h-4 text-[#FF8A00]" />
-                <span>{weekRangeString}</span>
+                <span>{dateRangeString}</span>
               </div>
-              <button className="p-1.5 rounded-lg border border-[#E2DDD5] hover:bg-[#F8F5F0] text-[#64748B] transition-colors">
+              <button
+                onClick={() => setDateOffset((prev) => prev + 1)}
+                className="p-1.5 rounded-lg border border-[#E2DDD5] hover:bg-[#F8F5F0] text-[#64748B] hover:text-[#1F2937] transition-all active:scale-95"
+                title={viewMode === 'weekly' ? 'Next Week' : 'Next Month'}
+                aria-label="Next period"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
+              {dateOffset !== 0 && (
+                <button
+                  onClick={() => setDateOffset(0)}
+                  className="px-2.5 py-1 text-[11px] font-semibold text-[#FF8A00] bg-[#FFF5EB] border border-[#FFE2C8] rounded-full hover:bg-[#FFEBD6] transition-colors"
+                >
+                  Current
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
-              <select className="px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-[#FAF7F2] text-xs font-medium text-[#1F2937] outline-none">
-                <option>Weekly View</option>
-                <option>Monthly View</option>
+              <select
+                value={viewMode}
+                onChange={(e) => {
+                  setViewMode(e.target.value as 'weekly' | 'monthly');
+                  setDateOffset(0);
+                }}
+                className="px-3 py-1.5 rounded-xl border border-[#E2DDD5] bg-[#FAF7F2] text-xs font-semibold text-[#1F2937] outline-none cursor-pointer hover:border-[#FF8A00] transition-colors"
+              >
+                <option value="weekly">Weekly View</option>
+                <option value="monthly">Monthly View</option>
               </select>
               <span
                 className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${submitted
@@ -504,34 +540,32 @@ export default function TimesheetsPage() {
             </div>
 
             {/* Bottom Actions */}
-            <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-[#F1ECE4]">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 mt-6 pt-6 border-t border-[#F1ECE4]">
               <button
                 onClick={handleExportTimesheetCSV}
-                className="px-4 py-2.5 rounded-full border border-[#E2DDD5] text-xs font-semibold text-[#1F2937] hover:bg-[#FAF7F2] transition-colors flex items-center gap-1.5"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-full border border-[#E2DDD5] text-xs font-semibold text-[#1F2937] hover:bg-[#FAF7F2] transition-colors flex items-center justify-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5 text-[#FF7A00]" />
                 <span>Export CSV</span>
               </button>
               <button
                 onClick={handleSaveDraft}
-                disabled={submitted}
-                className="px-5 py-2.5 rounded-full border border-[#E2DDD5] text-xs font-semibold text-[#64748B] hover:text-[#1F2937] hover:bg-[#FAF7F2] transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-[#E2DDD5] text-xs font-semibold text-[#1F2937] hover:bg-[#FAF7F2] transition-colors flex items-center justify-center gap-1.5 active:scale-98"
               >
-                <Save className="w-3.5 h-3.5" />
+                <Save className="w-3.5 h-3.5 text-[#64748B]" />
                 <span>Save Draft</span>
               </button>
               <button
                 onClick={handleSubmitTimesheet}
-                disabled={submitted}
-                className={`px-6 py-2.5 rounded-full text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 active:scale-98 ${submitted
-                  ? 'bg-[#16A34A] cursor-default'
+                className={`w-full sm:w-auto px-6 py-2.5 rounded-full text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-98 ${submitted
+                  ? 'bg-[#16A34A] hover:bg-[#15803D]'
                   : 'bg-[#FF8A00] hover:bg-[#E67C00]'
                   }`}
               >
                 {submitted ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Submitted for Approval</span>
+                    <span>Submitted (Click to Update)</span>
                   </>
                 ) : (
                   <>

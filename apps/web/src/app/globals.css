@@ -103,27 +103,65 @@ html.dark textarea {
   border-color: #374151 !important;
 }
 
-html.dark .text-\[\#1F2937\] {
+/* Primary text high contrast */
+html.dark .text-\[\#0F172A\],
+html.dark .text-\[\#1F2937\],
+html.dark .text-\[\#1E293B\],
+html.dark .text-\[\#334155\],
+html.dark .text-\[\#000000\] {
   color: #F8FAFC !important;
 }
 
+/* Secondary & muted text crisp contrast */
+html.dark .text-\[\#475569\],
 html.dark .text-\[\#64748B\],
 html.dark .text-\[\#8A92A6\],
-html.dark .text-\[\#94A3B8\] {
-  color: #94A3B8 !important;
+html.dark .text-\[\#8A94A6\],
+html.dark .text-\[\#94A3B8\],
+html.dark .text-\[\#9CA3AF\] {
+  color: #CBD5E1 !important;
 }
 
+/* Secondary surface backgrounds */
 html.dark .bg-\[\#FAF7F2\],
 html.dark .bg-\[\#F6F3EE\],
 html.dark .bg-\[\#F5F2EB\],
 html.dark .bg-\[\#FBF9F5\],
-html.dark .bg-\[\#F8F5F0\] {
+html.dark .bg-\[\#F8F5F0\],
+html.dark .bg-\[\#F3EFEA\],
+html.dark .bg-\[\#F7F4EF\],
+html.dark .bg-\[\#FAF8F5\],
+html.dark .bg-\[\#FDFBF7\],
+html.dark .bg-\[\#F9F7F4\],
+html.dark .bg-\[\#FFFDF9\],
+html.dark .bg-\[\#FFF9F2\] {
   background-color: #172033 !important;
 }
 
+html.dark .bg-\[\#FFF0E0\],
+html.dark .bg-\[\#FFF5EB\],
+html.dark .bg-\[\#FFFBEB\] {
+  background-color: rgba(255, 122, 0, 0.15) !important;
+}
+
+/* Border styling in dark mode */
 html.dark .border-\[\#F1ECE4\],
 html.dark .border-\[\#EBE4D8\],
-html.dark .border-\[\#E2DDD5\] {
+html.dark .border-\[\#E2DDD5\],
+html.dark .border-\[\#F3EFEA\],
+html.dark .border-\[\#F7F4EF\],
+html.dark .border-\[\#E2E8F0\],
+html.dark .border-\[\#FFE2C8\],
+html.dark .border-\[\#FFD8B3\] {
+  border-color: #2D3748 !important;
+}
+
+html.dark tr:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html.dark td,
+html.dark th {
   border-color: #1F2937 !important;
 }
 

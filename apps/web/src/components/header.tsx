@@ -161,13 +161,13 @@ export function Header() {
   ];
 
   return (
-    <header className="h-16 bg-[#FFFFFF] border-b border-[#F1ECE4] fixed top-0 right-0 left-0 w-full z-50 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-3 transition-all duration-300">
+    <header className="h-16 bg-[#FFFFFF] border-b border-[#F1ECE4] fixed top-0 right-0 left-0 w-full z-50 px-2 sm:px-6 lg:px-8 flex items-center justify-between gap-1.5 sm:gap-3 transition-all duration-300">
       {/* Left Group: Hamburger on Mobile + Brand Logo */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Mobile Hamburger Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className="p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] lg:hidden transition-colors shrink-0"
+          className="p-1.5 sm:p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] lg:hidden transition-colors shrink-0"
           title="Open Menu"
           aria-label="Open navigation menu"
         >
@@ -175,11 +175,11 @@ export function Header() {
         </button>
 
         {/* Brand Logo Header matching reference */}
-        <Link href="/" className="flex items-center gap-3 select-none">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF981A] to-[#FF7A00] flex items-center justify-center text-white font-bold text-xl shadow-md shadow-orange-500/20 shrink-0">
+        <Link href="/" className="flex items-center gap-2 sm:gap-3 select-none shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#FF981A] to-[#FF7A00] flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-md shadow-orange-500/20 shrink-0">
             W
           </div>
-          <div className="hidden sm:block">
+          <div className="hidden xs:block sm:block">
             <span className="font-bold text-base sm:text-lg text-[#1F2937] tracking-tight block leading-tight">
               Work Hub
             </span>
@@ -212,7 +212,7 @@ export function Header() {
       </div>
 
       {/* Right User Actions */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0 relative" ref={containerRef}>
+      <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 relative" ref={containerRef}>
         {/* 1. Notification Bell Button */}
         <button
           onClick={() => {
@@ -220,7 +220,7 @@ export function Header() {
             setAppsOpen(false);
             setProfileOpen(false);
           }}
-          className={`relative p-2 rounded-xl transition-colors ${
+          className={`relative p-1.5 sm:p-2 rounded-xl transition-colors shrink-0 ${
             notificationsOpen
               ? 'bg-[#FFF0E0] text-[#FF7A00]'
               : 'text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0]'
@@ -230,14 +230,14 @@ export function Header() {
         >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#FF7A00] ring-2 ring-white animate-pulse" />
+            <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#FF7A00] ring-2 ring-white animate-pulse" />
           )}
         </button>
 
         {/* 2. Theme Toggle Button (Light / OLED Dark) */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] transition-colors"
+          className="p-1.5 sm:p-2 rounded-xl text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0] transition-colors shrink-0"
           title={isDark ? 'Switch to Light Theme' : 'Switch to OLED Dark Theme'}
           aria-label="Toggle display theme"
         >
@@ -255,7 +255,7 @@ export function Header() {
             setNotificationsOpen(false);
             setProfileOpen(false);
           }}
-          className={`p-2 rounded-xl transition-colors ${
+          className={`hidden sm:inline-flex p-1.5 sm:p-2 rounded-xl transition-colors shrink-0 ${
             appsOpen
               ? 'bg-[#FFF0E0] text-[#FF7A00]'
               : 'text-[#64748B] hover:text-[#1F2937] hover:bg-[#F8F5F0]'
@@ -266,16 +266,16 @@ export function Header() {
           <LayoutGrid className="w-5 h-5" />
         </button>
 
-        {/* 4. User Profile Pill */}
+        {/* 4. User Profile Pill (Always untruncated with shrink-0) */}
         <div
           onClick={() => {
             setProfileOpen(!profileOpen);
             setNotificationsOpen(false);
             setAppsOpen(false);
           }}
-          className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2 pr-2 sm:pr-3 py-1 sm:py-1.5 rounded-full hover:bg-[#F8F5F0] transition-colors cursor-pointer border border-transparent hover:border-[#EBE4D8]"
+          className="flex items-center gap-1.5 sm:gap-3 p-1 sm:py-1.5 sm:pl-2 sm:pr-3 rounded-full hover:bg-[#F8F5F0] transition-colors cursor-pointer border border-transparent hover:border-[#EBE4D8] shrink-0"
         >
-          <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-full bg-gradient-to-tr from-[#FF981A] to-[#FFB766] flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-sm shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-[#FF981A] to-[#FFB766] flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-sm shrink-0">
             {displayName[0]}
           </div>
           <div className="text-left hidden sm:block">
@@ -286,7 +286,7 @@ export function Header() {
               {displayRole.toUpperCase()}
             </span>
           </div>
-          <ChevronDown className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#8A94A6] hidden sm:block" />
+          <ChevronDown className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#8A94A6] hidden sm:block shrink-0" />
         </div>
 
         {/* -------------------- NOTIFICATIONS DROPDOWN -------------------- */}

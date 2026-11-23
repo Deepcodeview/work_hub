@@ -436,13 +436,31 @@ export class AttendanceService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    return this.prisma.attendanceSession.findMany({
+    const sessions = await this.prisma.attendanceSession.findMany({
       where,
       include: {
         breaks: true,
       },
       orderBy: { clockInAt: 'desc' },
       take: 100,
+    });
+
+    return sessions.map((s) => {
+      const totalBreakMinutes = (s.breaks || []).reduce((sum, b) => {
+        if (typeof b.durationMinutes === 'number' && b.durationMinutes > 0) {
+          return sum + b.durationMinutes;
+        }
+        if (b.startTime && b.endTime) {
+          return sum + Math.max(0, Math.round((new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000));
+        }
+        return sum;
+      }, 0);
+
+      return {
+        ...s,
+        totalBreakMinutes,
+        netDurationMinutes: s.totalDurationMinutes ?? 0,
+      };
     });
   }
 

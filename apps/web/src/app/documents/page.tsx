@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, Badge } from '@workhub/ui';
 
 interface DocFolderItem {
@@ -28,6 +28,9 @@ export default function DocumentsPage() {
   const [folderName, setFolderName] = useState('');
   const [fileName, setFileName] = useState('');
   const [mimeType, setMimeType] = useState('application/pdf');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileSizeStr, setFileSizeStr] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchData = async () => {
     try {
@@ -55,6 +58,19 @@ export default function DocumentsPage() {
     fetchData();
   }, []);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setFileName(file.name);
+      if (file.type) {
+        setMimeType(file.type);
+      }
+      const kb = file.size / 1024;
+      setFileSizeStr(kb > 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb.toFixed(1)} KB`);
+    }
+  };
+
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -79,6 +95,9 @@ export default function DocumentsPage() {
   const handleUploadFile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const effectiveName = fileName.trim() || selectedFile?.name || 'Uploaded_Document.pdf';
+      const size = selectedFile ? selectedFile.size : 1048576;
+
       const res = await fetch('/api/v1/documents/files', {
         method: 'POST',
         headers: {
@@ -86,15 +105,17 @@ export default function DocumentsPage() {
           Authorization: `Bearer ${localStorage.getItem('workhub_token') || localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({
-          name: fileName,
-          mimeType,
-          sizeBytes: 1048576, // 1MB mock file
-          storagePath: `/s3/documents/${fileName.toLowerCase().replace(/\s+/g, '-')}`,
+          name: effectiveName,
+          mimeType: mimeType || selectedFile?.type || 'application/pdf',
+          sizeBytes: size,
+          storagePath: `/s3/documents/${effectiveName.toLowerCase().replace(/[^a-z0-9.]+/g, '-')}`,
         }),
       });
       if (res.ok) {
         setShowFileModal(false);
         setFileName('');
+        setSelectedFile(null);
+        setFileSizeStr('');
         fetchData();
       }
     } catch {
@@ -146,8 +167,46 @@ export default function DocumentsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleUploadFile} className="space-y-4">
+                {/* Native hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt"
+                />
+
+                {/* Interactive File Picker Dropzone */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-[#E2DDD5] hover:border-[#FF8A00] rounded-2xl p-5 text-center cursor-pointer bg-[#FAF7F2]/50 hover:bg-[#FAF7F2] transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#FFF0E0] text-[#FF8A00] flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
+                    📁
+                  </div>
+                  {selectedFile ? (
+                    <div>
+                      <span className="font-bold text-xs text-[#1F2937] block truncate max-w-xs mx-auto">
+                        {selectedFile.name}
+                      </span>
+                      <span className="text-[11px] text-[#16A34A] font-semibold mt-0.5 block">
+                        Selected ({fileSizeStr}) — Click to change
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="font-semibold text-xs text-[#1F2937] block">
+                        Click to browse local files
+                      </span>
+                      <span className="text-[11px] text-[#8A92A6] block mt-0.5">
+                        PDF, Word, Excel, PNG or CSV up to 25MB
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-[#64748B] mb-1">Document Name</label>
+                  <label className="block text-xs font-semibold text-[#64748B] mb-1">Document Title</label>
                   <Input
                     required
                     placeholder="e.g. Employee_Handbook_2026.pdf"
@@ -166,13 +225,22 @@ export default function DocumentsPage() {
                     <option value="application/vnd.openxmlformats-officedocument.wordprocessingml.document">Word Document (.docx)</option>
                     <option value="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">Excel Spreadsheet (.xlsx)</option>
                     <option value="image/png">PNG Image (.png)</option>
+                    <option value="text/csv">CSV Data (.csv)</option>
                   </select>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" type="button" onClick={() => setShowFileModal(false)}>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => {
+                      setShowFileModal(false);
+                      setSelectedFile(null);
+                      setFileName('');
+                    }}
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit">Upload</Button>
+                  <Button type="submit">Upload Document</Button>
                 </div>
               </form>
             </CardContent>

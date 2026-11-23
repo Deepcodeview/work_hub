@@ -187,14 +187,31 @@ export default function AttendancePage() {
     async function loadHistory() {
       const histRes = await api.attendance.getHistory();
       if (histRes.success && Array.isArray(histRes.data)) {
-        const formatted = histRes.data.map((item: any) => ({
-          date: new Date(item.clockInAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
-          in: new Date(item.clockInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          out: item.clockOutAt ? new Date(item.clockOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--',
-          breaks: `${item.totalBreakMinutes || 0}m`,
-          net: item.netDurationMinutes ? `${Math.floor(item.netDurationMinutes / 60)}h ${item.netDurationMinutes % 60}m` : 'Active',
-          status: item.status === 'CLOSED' ? 'PRESENT' : 'OPEN',
-        }));
+        const formatted = histRes.data.map((item: any) => {
+          const totalBreaks = typeof item.totalBreakMinutes === 'number'
+            ? item.totalBreakMinutes
+            : Array.isArray(item.breaks)
+            ? item.breaks.reduce((sum: number, b: any) => {
+                if (typeof b.durationMinutes === 'number' && b.durationMinutes > 0) return sum + b.durationMinutes;
+                if (b.startTime && b.endTime) {
+                  return sum + Math.max(0, Math.round((new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 60000));
+                }
+                return sum;
+              }, 0)
+            : 0;
+
+          const netMinutes = item.netDurationMinutes ?? item.totalDurationMinutes ?? 0;
+
+          return {
+            id: item.id,
+            date: new Date(item.clockInAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+            in: new Date(item.clockInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            out: item.clockOutAt ? new Date(item.clockOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--',
+            breaks: `${totalBreaks}m`,
+            net: item.status === 'OPEN' ? 'Active' : `${Math.floor(netMinutes / 60)}h ${netMinutes % 60}m`,
+            status: item.status === 'CLOSED' ? 'PRESENT' : 'OPEN',
+          };
+        });
         setHistory(formatted);
       }
     }
