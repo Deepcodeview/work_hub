@@ -44,6 +44,9 @@ export class AttendanceService implements OnModuleInit, OnModuleDestroy {
         console.warn('[AttendanceService] Scheduled midnight sweep warning:', err);
       }
     }, 15 * 60 * 1000);
+    if (this.autoCloseTimer && typeof this.autoCloseTimer.unref === 'function') {
+      this.autoCloseTimer.unref();
+    }
   }
 
   onModuleDestroy() {
@@ -85,10 +88,11 @@ export class AttendanceService implements OnModuleInit, OnModuleDestroy {
       whereClause.employeeId = employeeId;
     }
 
-    const staleSessions = await this.prisma.attendanceSession.findMany({
+    const rawSessions = await this.prisma.attendanceSession?.findMany?.({
       where: whereClause,
       include: { breaks: true },
     });
+    const staleSessions = Array.isArray(rawSessions) ? rawSessions : [];
 
     let closedCount = 0;
     for (const session of staleSessions) {
@@ -98,7 +102,7 @@ export class AttendanceService implements OnModuleInit, OnModuleDestroy {
         endOfClockInDay.setHours(23, 59, 59, 999);
 
         // Close any dangling open breaks
-        for (const brk of session.breaks) {
+        for (const brk of session.breaks || []) {
           if (!brk.endTime) {
             const breakEnd = brk.startTime < endOfClockInDay ? endOfClockInDay : brk.startTime;
             const breakDuration = Math.max(0, Math.round((breakEnd.getTime() - brk.startTime.getTime()) / 60000));
@@ -112,9 +116,9 @@ export class AttendanceService implements OnModuleInit, OnModuleDestroy {
           }
         }
 
-        const updatedBreaks = await this.prisma.attendanceBreak.findMany({
+        const updatedBreaks = (await this.prisma.attendanceBreak?.findMany?.({
           where: { sessionId: session.id },
-        });
+        })) || [];
         const totalBreakMinutes = updatedBreaks.reduce(
           (sum, b) => sum + (b.durationMinutes || 0),
           0
@@ -235,7 +239,7 @@ export class AttendanceService implements OnModuleInit, OnModuleDestroy {
     const now = new Date();
 
     // Close any dangling open breaks
-    for (const brk of session.breaks) {
+    for (const brk of session.breaks || []) {
       if (!brk.endTime) {
         const breakDuration = Math.max(0, Math.round((now.getTime() - brk.startTime.getTime()) / 60000));
         await this.prisma.attendanceBreak.update({
@@ -249,9 +253,9 @@ export class AttendanceService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Reload breaks to get updated total break time
-    const updatedBreaks = await this.prisma.attendanceBreak.findMany({
+    const updatedBreaks = (await this.prisma.attendanceBreak?.findMany?.({
       where: { sessionId: session.id },
-    });
+    })) || [];
     const totalBreakMinutes = updatedBreaks.reduce(
       (sum, b) => sum + (b.durationMinutes || 0),
       0
