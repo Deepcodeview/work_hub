@@ -11,7 +11,8 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @workhub/database prisma:generate",
-    "db:migrate": "pnpm --filter @workhub/database prisma:migrate"
+    "db:migrate": "pnpm --filter @workhub/database prisma:migrate",
+    "deploy:server": "powershell -ExecutionPolicy Bypass -File ./deploy-to-server.ps1"
   },
   "devDependencies": {
     "prettier": "^3.4.2",
